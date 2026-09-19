@@ -1,0 +1,9 @@
+thresholds:
+  abstain_below: 0.45
+  ambiguity_band: 0.10
+runtime:
+  model: deterministic-demo
+  temperature: 0.0
+  seed: 20260919
+limits:
+  max_tokens_per_case: 4000

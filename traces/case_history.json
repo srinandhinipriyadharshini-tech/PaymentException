@@ -1,0 +1,1119 @@
+{
+  "histories": {
+    "Maya Patel": [
+      {
+        "case_id": "CASE-SYN-684775",
+        "case_status": "CLARIFICATION_REQUIRED",
+        "claim_category": null,
+        "category": null,
+        "request_status": "NOT_CREATED",
+        "reference_id": null,
+        "rail": null,
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "152788.25",
+          "amount_max": "152788.25",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": 24,
+          "month_of_year": null,
+          "beneficiary_description": null,
+          "customer_reason": "",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003777",
+                "rail": "ACH",
+                "amount": "139849.77",
+                "currency": "GBP",
+                "value_date": "2026-09-24",
+                "settlement_timestamp": "2026-09-24T17:21:00",
+                "debtor_account": "ACCT-SYN-000003",
+                "creditor_account": "ACCT-SYN-004027",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003786",
+                "rail": "WIRE",
+                "amount": "140182.86",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T09:18:00",
+                "debtor_account": "ACCT-SYN-000006",
+                "creditor_account": "ACCT-SYN-004036",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003795",
+                "rail": "RTP",
+                "amount": "140515.95",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T11:15:00",
+                "debtor_account": "ACCT-SYN-000003",
+                "creditor_account": "ACCT-SYN-004045",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003869",
+                "rail": "ACH",
+                "amount": "143253.69",
+                "currency": "GBP",
+                "value_date": "2026-09-24",
+                "settlement_timestamp": "2026-09-24T17:17:00",
+                "debtor_account": "ACCT-SYN-000005",
+                "creditor_account": "ACCT-SYN-004119",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003878",
+                "rail": "WIRE",
+                "amount": "143586.78",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T09:14:00",
+                "debtor_account": "ACCT-SYN-000002",
+                "creditor_account": "ACCT-SYN-004128",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003887",
+                "rail": "RTP",
+                "amount": "143919.87",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T11:11:00",
+                "debtor_account": "ACCT-SYN-000005",
+                "creditor_account": "ACCT-SYN-004137",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003970",
+                "rail": "WIRE",
+                "amount": "146990.70",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T09:10:00",
+                "debtor_account": "ACCT-SYN-000004",
+                "creditor_account": "ACCT-SYN-004220",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003979",
+                "rail": "RTP",
+                "amount": "147323.79",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T11:07:00",
+                "debtor_account": "ACCT-SYN-000001",
+                "creditor_account": "ACCT-SYN-004229",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004062",
+                "rail": "WIRE",
+                "amount": "150394.62",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T09:06:00",
+                "debtor_account": "ACCT-SYN-000006",
+                "creditor_account": "ACCT-SYN-004312",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004071",
+                "rail": "RTP",
+                "amount": "150727.71",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T11:03:00",
+                "debtor_account": "ACCT-SYN-000003",
+                "creditor_account": "ACCT-SYN-004321",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004154",
+                "rail": "WIRE",
+                "amount": "153798.54",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T09:02:00",
+                "debtor_account": "ACCT-SYN-000002",
+                "creditor_account": "ACCT-SYN-004404",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004163",
+                "rail": "RTP",
+                "amount": "154131.63",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T10:59:00",
+                "debtor_account": "ACCT-SYN-000005",
+                "creditor_account": "ACCT-SYN-004413",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004246",
+                "rail": "WIRE",
+                "amount": "157202.46",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T18:58:00",
+                "debtor_account": "ACCT-SYN-000004",
+                "creditor_account": "ACCT-SYN-004496",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004255",
+                "rail": "RTP",
+                "amount": "157535.55",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T10:55:00",
+                "debtor_account": "ACCT-SYN-000001",
+                "creditor_account": "ACCT-SYN-004505",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004338",
+                "rail": "WIRE",
+                "amount": "160606.38",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T18:54:00",
+                "debtor_account": "ACCT-SYN-000006",
+                "creditor_account": "ACCT-SYN-004588",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004347",
+                "rail": "RTP",
+                "amount": "160939.47",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T10:51:00",
+                "debtor_account": "ACCT-SYN-000003",
+                "creditor_account": "ACCT-SYN-004597",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004430",
+                "rail": "WIRE",
+                "amount": "164010.30",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T18:50:00",
+                "debtor_account": "ACCT-SYN-000002",
+                "creditor_account": "ACCT-SYN-004680",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004439",
+                "rail": "RTP",
+                "amount": "164343.39",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T10:47:00",
+                "debtor_account": "ACCT-SYN-000005",
+                "creditor_account": "ACCT-SYN-004689",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004522",
+                "rail": "WIRE",
+                "amount": "167414.22",
+                "currency": "GBP",
+                "value_date": "2026-08-24",
+                "settlement_timestamp": "2026-08-24T18:46:00",
+                "debtor_account": "ACCT-SYN-000004",
+                "creditor_account": "ACCT-SYN-004772",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "PENDING",
+                "funds_moved": false
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004531",
+                "rail": "RTP",
+                "amount": "167747.31",
+                "currency": "GBP",
+                "value_date": "2026-07-24",
+                "settlement_timestamp": "2026-07-24T10:43:00",
+                "debtor_account": "ACCT-SYN-000001",
+                "creditor_account": "ACCT-SYN-004781",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": null,
+        "remedy": null,
+        "deadline": null,
+        "confidence": 0.8,
+        "clarification_question": "Which of the similarly matched payments do you mean?",
+        "customer_message": "",
+        "interbank_request": "",
+        "redacted": true,
+        "agent_confirmed": false
+      },
+      {
+        "case_id": "CASE-SYN-633917",
+        "case_status": "SUBMITTED_SIMULATED",
+        "claim_category": "ERRONEOUS",
+        "category": "ERRONEOUS",
+        "request_status": "SIMULATED_SUBMITTED",
+        "reference_id": "SIM-ACH-633917",
+        "rail": "ACH",
+        "remedy_available": true,
+        "agent_approval_required": true,
+        "agent_approved": true,
+        "extracted_facts": {
+          "amount_min": "152788.25",
+          "amount_max": "152788.25",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": 24,
+          "month_of_year": null,
+          "beneficiary_description": "Cedar Works",
+          "customer_reason": "",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-003777",
+                "rail": "ACH",
+                "amount": "152788.25",
+                "currency": "GBP",
+                "value_date": "2026-09-24",
+                "settlement_timestamp": "2026-09-24T09:00:00",
+                "debtor_account": "ACCT-SYN-000003",
+                "creditor_account": "ACCT-SYN-004027",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "day of month",
+                "trading name"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-003777",
+          "rail": "ACH",
+          "amount": "152788.25",
+          "currency": "GBP",
+          "value_date": "2026-09-24",
+          "settlement_timestamp": "2026-09-24T09:00:00",
+          "debtor_account": "ACCT-SYN-000003",
+          "creditor_account": "ACCT-SYN-004027",
+          "creditor_registered_name": "Cedar Works Inc",
+          "creditor_trading_name": "Cedar Works",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "ERRONEOUS",
+          "action": "Request return of funds",
+          "rationale": "Synthetic demo rule for an erroneous payment.",
+          "available": true,
+          "requires_human_review": false
+        },
+        "deadline": "2026-10-24",
+        "confidence": 0.84,
+        "clarification_question": null,
+        "customer_message": "We recorded your erroneous claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category ERRONEOUS. This request does not guarantee recovery.",
+        "redacted": true,
+        "agent_confirmed": false
+      }
+    ],
+    "Jordan Lee": [
+      {
+        "case_id": "CASE-SYN-475417",
+        "case_status": "CLARIFICATION_REQUIRED",
+        "claim_category": null,
+        "category": null,
+        "request_status": "NOT_CREATED",
+        "reference_id": null,
+        "rail": null,
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "750.00",
+          "amount_max": "1250.00",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": 2,
+          "month_of_year": null,
+          "beneficiary_description": "Northwind",
+          "customer_reason": "unauthorised",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000001",
+                "rail": "ACH",
+                "amount": "1250.00",
+                "currency": "GBP",
+                "value_date": "2026-01-02",
+                "settlement_timestamp": "2026-01-02T09:00:00",
+                "debtor_account": "ACCT-SYN-000001",
+                "creditor_account": "ACCT-SYN-000251",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "day of month",
+                "trading name"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000002",
+                "rail": "ACH",
+                "amount": "1250.00",
+                "currency": "GBP",
+                "value_date": "2026-01-02",
+                "settlement_timestamp": "2026-01-02T09:00:00",
+                "debtor_account": "ACCT-SYN-000002",
+                "creditor_account": "ACCT-SYN-000252",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "day of month",
+                "trading name"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": null,
+        "remedy": null,
+        "deadline": null,
+        "confidence": 0.99,
+        "clarification_question": "Which of the similarly matched payments do you mean?",
+        "customer_message": "",
+        "interbank_request": "",
+        "redacted": true,
+        "agent_confirmed": false
+      }
+    ],
+    "Sam Rivera": [
+      {
+        "case_id": "CASE-SYN-487807",
+        "case_status": "SUBMITTED_SIMULATED",
+        "claim_category": "UNAUTHORISED",
+        "category": "UNAUTHORISED",
+        "request_status": "SIMULATED_SUBMITTED",
+        "reference_id": "SIM-RTP-487807",
+        "rail": "RTP",
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": true,
+        "extracted_facts": {
+          "amount_min": "22500.00",
+          "amount_max": "37500.00",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": 4,
+          "month_of_year": null,
+          "beneficiary_description": null,
+          "customer_reason": "unauthorised",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-001059",
+                "rail": "RTP",
+                "amount": "33957.06",
+                "currency": "GBP",
+                "value_date": "2026-07-29",
+                "settlement_timestamp": "2026-07-29T10:51:00",
+                "debtor_account": "ACCT-SYN-000059",
+                "creditor_account": "ACCT-SYN-001309",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.55,
+              "match_reasons": [
+                "amount"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-001059",
+          "rail": "RTP",
+          "amount": "33957.06",
+          "currency": "GBP",
+          "value_date": "2026-07-29",
+          "settlement_timestamp": "2026-07-29T10:51:00",
+          "debtor_account": "ACCT-SYN-000059",
+          "creditor_account": "ACCT-SYN-001309",
+          "creditor_registered_name": "Cedar Works Inc",
+          "creditor_trading_name": "Cedar Works",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "NO_REMEDY",
+          "action": "No simulated remedy available",
+          "rationale": "Synthetic instant-payment demo rules do not provide a remedy.",
+          "available": false,
+          "requires_human_review": false
+        },
+        "deadline": "2026-09-27",
+        "confidence": 0.94,
+        "clarification_question": null,
+        "customer_message": "We recorded your unauthorised claim for the payment.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category UNAUTHORISED.",
+        "redacted": true,
+        "agent_confirmed": false
+      }
+    ],
+    "Alex Morgan": [
+      {
+        "case_id": "CASE-SYN-863337",
+        "case_status": "NO_REMEDY",
+        "claim_category": "UNAUTHORISED",
+        "category": "UNAUTHORISED",
+        "request_status": "NOT_AVAILABLE",
+        "reference_id": null,
+        "rail": "RTP",
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "300.00",
+          "amount_max": "500.00",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": 2,
+          "month_of_year": null,
+          "beneficiary_description": null,
+          "customer_reason": "unauthorised",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000004",
+                "rail": "RTP",
+                "amount": "410.50",
+                "currency": "GBP",
+                "value_date": "2026-01-02",
+                "settlement_timestamp": "2026-01-02T09:00:00",
+                "debtor_account": "ACCT-SYN-000004",
+                "creditor_account": "ACCT-SYN-000254",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-000004",
+          "rail": "RTP",
+          "amount": "410.50",
+          "currency": "GBP",
+          "value_date": "2026-01-02",
+          "settlement_timestamp": "2026-01-02T09:00:00",
+          "debtor_account": "ACCT-SYN-000004",
+          "creditor_account": "ACCT-SYN-000254",
+          "creditor_registered_name": "Cedar Works Inc",
+          "creditor_trading_name": "Cedar Works",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "NO_REMEDY",
+          "action": "No simulated remedy available",
+          "rationale": "Synthetic instant-payment demo rules do not provide a remedy.",
+          "available": false,
+          "requires_human_review": false
+        },
+        "deadline": "2026-03-03",
+        "confidence": 0.94,
+        "clarification_question": null,
+        "customer_message": "We recorded your unauthorised claim for the payment.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category UNAUTHORISED.",
+        "redacted": true,
+        "agent_confirmed": false
+      }
+    ],
+    "Priya Shah": [
+      {
+        "case_id": "CASE-SYN-925319",
+        "case_status": "NO_REMEDY",
+        "claim_category": "UNAUTHORISED",
+        "category": "UNAUTHORISED",
+        "request_status": "NOT_AVAILABLE",
+        "reference_id": null,
+        "rail": "FEDNOW",
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "70",
+          "amount_max": "70",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": 2,
+          "month_of_year": null,
+          "beneficiary_description": null,
+          "customer_reason": "unauthorised",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000005",
+                "rail": "FEDNOW",
+                "amount": "75.25",
+                "currency": "GBP",
+                "value_date": "2026-01-02",
+                "settlement_timestamp": "2026-01-02T09:00:00",
+                "debtor_account": "ACCT-SYN-000005",
+                "creditor_account": "ACCT-SYN-000255",
+                "creditor_registered_name": "Lumen Health Partners",
+                "creditor_trading_name": "Lumen Health",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-000005",
+          "rail": "FEDNOW",
+          "amount": "75.25",
+          "currency": "GBP",
+          "value_date": "2026-01-02",
+          "settlement_timestamp": "2026-01-02T09:00:00",
+          "debtor_account": "ACCT-SYN-000005",
+          "creditor_account": "ACCT-SYN-000255",
+          "creditor_registered_name": "Lumen Health Partners",
+          "creditor_trading_name": "Lumen Health",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "NO_REMEDY",
+          "action": "No simulated remedy available",
+          "rationale": "Synthetic instant-payment demo rules do not provide a remedy.",
+          "available": false,
+          "requires_human_review": false
+        },
+        "deadline": "2026-03-03",
+        "confidence": 0.94,
+        "clarification_question": null,
+        "customer_message": "We recorded your unauthorised claim for the payment.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category UNAUTHORISED.",
+        "redacted": true,
+        "agent_confirmed": false
+      }
+    ],
+    "Taylor Kim": [
+      {
+        "case_id": "CASE-SYN-665911",
+        "case_status": "SUBMITTED_SIMULATED",
+        "claim_category": "UNAUTHORISED",
+        "category": "UNAUTHORISED",
+        "request_status": "SIMULATED_SUBMITTED",
+        "reference_id": "SIM-ACH-665911",
+        "rail": "ACH",
+        "remedy_available": true,
+        "agent_approval_required": true,
+        "agent_approved": true,
+        "extracted_facts": {
+          "amount_min": "1800",
+          "amount_max": "1800",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": 2,
+          "month_of_year": null,
+          "beneficiary_description": null,
+          "customer_reason": "unauthorised",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000006",
+                "rail": "ACH",
+                "amount": "1800.00",
+                "currency": "GBP",
+                "value_date": "2026-01-02",
+                "settlement_timestamp": "2026-01-02T09:00:00",
+                "debtor_account": "ACCT-SYN-000006",
+                "creditor_account": "ACCT-SYN-000256",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.8,
+              "match_reasons": [
+                "amount",
+                "day of month"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-000006",
+          "rail": "ACH",
+          "amount": "1800.00",
+          "currency": "GBP",
+          "value_date": "2026-01-02",
+          "settlement_timestamp": "2026-01-02T09:00:00",
+          "debtor_account": "ACCT-SYN-000006",
+          "creditor_account": "ACCT-SYN-000256",
+          "creditor_registered_name": "Northwind Supplies Ltd",
+          "creditor_trading_name": "Northwind",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "UNAUTHORISED",
+          "action": "Open an unauthorised-payment investigation",
+          "rationale": "Synthetic demo rule for an unauthorised payment.",
+          "available": true,
+          "requires_human_review": true
+        },
+        "deadline": "2026-03-03",
+        "confidence": 0.94,
+        "clarification_question": null,
+        "customer_message": "We recorded your unauthorised claim for the payment.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category UNAUTHORISED.",
+        "redacted": true,
+        "agent_confirmed": false
+      },
+      {
+        "case_id": "CASE-SYN-294101",
+        "case_status": "CLARIFICATION_REQUIRED",
+        "claim_category": null,
+        "category": null,
+        "request_status": "NOT_CREATED",
+        "reference_id": null,
+        "rail": null,
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "1800",
+          "amount_max": "1800",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": null,
+          "month_of_year": 9,
+          "beneficiary_description": "Northwind",
+          "customer_reason": "erroneous",
+          "rail": "ACH"
+        },
+        "ranked_candidates": {
+          "candidates": [],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": null,
+        "remedy": null,
+        "deadline": null,
+        "confidence": 0.0,
+        "clarification_question": "Please provide an amount, date, or beneficiary so we can locate the payment.",
+        "customer_message": "",
+        "interbank_request": "",
+        "redacted": true,
+        "agent_confirmed": false
+      }
+    ]
+  },
+  "chat_threads": {
+    "CASE-SYN-475417": [
+      {
+        "role": "customer",
+        "text": "someone took about $1000 from my account on the 2nd ., i never authorized it. it says Northwind"
+      },
+      {
+        "role": "agent",
+        "text": "Which of the similarly matched payments do you mean? Option 1: GBP 1,250.00 on 2026-01-02 to Northwind via ACH (PMT-SYN-000001) Option 2: GBP 1,250.00 on 2026-01-02 to Northwind via ACH (PMT-SYN-000002)"
+      }
+    ],
+    "CASE-SYN-487807": [
+      {
+        "role": "customer",
+        "text": "i never authorized Lumen, 29th around $30000"
+      },
+      {
+        "role": "agent",
+        "text": "Which of the similarly matched payments do you mean? Option 1: GBP 31,701.28 on 2026-07-29 to Blue Oak via WIRE (PMT-SYN-000186) Option 2: GBP 37,485.22 on 2026-08-29 to Lumen Health via FEDNOW (PMT-SYN-000256) Option 3: GBP 31,686.84 on 2026-04-29 to Northwind via ACH (PMT-SYN-000561) Option 4: GBP 33,957.06 on 2026-07-29 to Cedar Works via RTP (PMT-SYN-001059) Option 5: GBP 29,050.29 on 2026-06-29 to Cedar Works via RTP (PMT-SYN-001875)"
+      },
+      {
+        "role": "customer",
+        "text": "4"
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your unauthorised claim for the payment. Please confirm that you mean the GBP 33,957.06 payment on 2026-07-29 to Cedar Works. Once you confirm, we can raise the simulated inter-bank request."
+      },
+      {
+        "role": "customer",
+        "text": "yes i confirm"
+      },
+      {
+        "role": "agent",
+        "text": "Thank you. Your confirmation was received. An agent will approve the simulated request before submission."
+      },
+      {
+        "role": "agent",
+        "text": "[processing] Simulated inter-bank request..."
+      },
+      {
+        "role": "agent",
+        "text": "Thank you for confirming. We raised the simulated inter-bank request SIM-RTP-487807. Payment details: GBP 33,957.06 on 2026-07-29 to Cedar Works via RTP. Deadline: 2026-09-27. No real bank was contacted."
+      }
+    ],
+    "CASE-SYN-665911": [
+      {
+        "role": "customer",
+        "text": "i never authorized for $1800 on 2nd for Northwind"
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your unauthorised claim for the payment. Please confirm that you mean the GBP 1,800.00 payment on 2026-01-02 to Northwind. Once you confirm, we can raise the simulated inter-bank request."
+      },
+      {
+        "role": "customer",
+        "text": "yes i confirm"
+      },
+      {
+        "role": "agent",
+        "text": "Thank you. Your confirmation was received. An agent will approve the simulated request before submission."
+      },
+      {
+        "role": "agent",
+        "text": "[processing] Simulated inter-bank request..."
+      },
+      {
+        "role": "agent",
+        "text": "Thank you for confirming. We raised the simulated inter-bank request SIM-ACH-665911. Payment details: GBP 1,800.00 on 2026-01-02 to Northwind via ACH. Deadline: 2026-03-03. No real bank was contacted."
+      }
+    ],
+    "CASE-SYN-925319": [
+      {
+        "role": "customer",
+        "text": "i never authorized $70 for Lumen on 2nd"
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your unauthorised claim for the payment. Please confirm that you mean the GBP 75.25 payment on 2026-01-02 to Lumen Health. Once you confirm, we can raise the simulated inter-bank request. However, the payment-exception deadline passed on 2026-03-03; I am routing this for manual review rather than raising a late request."
+      }
+    ],
+    "CASE-SYN-863337": [
+      {
+        "role": "customer",
+        "text": "i never authorized for Works for around $400 on 2nd"
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your unauthorised claim for the payment. Please confirm that you mean the GBP 410.50 payment on 2026-01-02 to Cedar Works. Once you confirm, we can raise the simulated inter-bank request. However, the payment-exception deadline passed on 2026-03-03; I am routing this for manual review rather than raising a late request."
+      }
+    ],
+    "CASE-SYN-684775": [
+      {
+        "role": "customer",
+        "text": "sent $152788.25 for Cedar on 24th i didnt authorized"
+      },
+      {
+        "role": "agent",
+        "text": "Which of the similarly matched payments do you mean? Option 1: GBP 139,849.77 on 2026-09-24 to Northwind via ACH (PMT-SYN-003777) Option 2: GBP 140,182.86 on 2026-08-24 to Blue Oak via WIRE (PMT-SYN-003786) Option 3: GBP 140,515.95 on 2026-07-24 to Cedar Works via RTP (PMT-SYN-003795) Option 4: GBP 143,253.69 on 2026-09-24 to Northwind via ACH (PMT-SYN-003869) Option 5: GBP 143,586.78 on 2026-08-24 to Blue Oak via WIRE (PMT-SYN-003878)"
+      }
+    ],
+    "CASE-SYN-633917": [
+      {
+        "role": "customer",
+        "text": "sent $152788.25 for Cedar on 24th i didnt authorized"
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your erroneous claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available. Please confirm that you mean the GBP 152,788.25 payment on 2026-09-24 to Cedar Works. Once you confirm, we can raise a simulated inter-bank request. This is not a guarantee of recovery; the receiving institution may decline it or the funds may no longer be available."
+      },
+      {
+        "role": "customer",
+        "text": "yes i confirm"
+      },
+      {
+        "role": "agent",
+        "text": "Thank you. Your confirmation was received. The simulated request will be submitted automatically."
+      },
+      {
+        "role": "agent",
+        "text": "[processing] Simulated inter-bank request..."
+      },
+      {
+        "role": "agent",
+        "text": "Thank you for confirming. We raised the simulated inter-bank request SIM-ACH-633917. This is a request only and does not guarantee recovery; the receiving institution may decline it or the funds may no longer be available. Payment details: GBP 152,788.25 on 2026-09-24 to Cedar Works via ACH. Deadline: 2026-10-24. No real bank was contacted."
+      }
+    ]
+  },
+  "drafts": {
+    "Maya Patel": "sent $152788.25 for Cedar on 24th i didnt authorized",
+    "Jordan Lee": "someone took about $1000 from my account on the 2nd ., i never authorized it. it says Northwind",
+    "Sam Rivera": "i never authorized Lumen, 29th around $30000 Clarification: on the 4th",
+    "Alex Morgan": "i never authorized for Works for around $400 on 2nd",
+    "Priya Shah": "i never authorized $70 for Lumen on 2nd",
+    "Taylor Kim": "I made a mistake with the ACH payment of \u00a31800 on September 9 to Northwind. Please request its return."
+  }
+}
