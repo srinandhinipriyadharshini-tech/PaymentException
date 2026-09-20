@@ -1,0 +1,13 @@
+scenario_id,customer,debtor_account,creditor_account,payment_id,rail,claim_text,expected_category,expected_status,expected_result
+C01,Maya Patel,ACCT-SYN-000001,ACCT-SYN-000251,PMT-SYN-000001,ACH,"I did not make the ACH payment of GBP 1250 on 2026-01-02 to Northwind.",UNAUTHORISED,MANUAL_REVIEW,"Match payment; expired 60-day deadline; no automatic late request"
+C02,Sam Rivera,ACCT-SYN-000006,ACCT-SYN-000256,PMT-SYN-000006,ACH,"I made a mistake with the ACH payment of GBP 1800 on September 9 to Northwind.",ERRONEOUS,READY_FOR_REVIEW,"Return-of-funds remedy; deadline 2026-10-09"
+C03,Jordan Lee,ACCT-SYN-000006,ACCT-SYN-005248,PMT-SYN-004998,WIRE,"The WIRE payment of GBP 12500 on 2026-08-14 to Blue Oak was authorised by me, but I was scammed.",AUTHORISED_BUT_SCAMMED,READY_FOR_REVIEW,"Scam investigation remedy; deadline 2026-10-13"
+C04,Sam Rivera,ACCT-SYN-000001,ACCT-SYN-005249,PMT-SYN-004999,RTP,"The RTP payment of GBP 3200 on 2026-09-05 to Cedar was a scam.",NO_REMEDY,NO_REMEDY,"Instant rail finality blocks recovery request"
+C05,Jordan Lee,ACCT-SYN-000002,ACCT-SYN-005250,PMT-SYN-005000,FEDNOW,"The FEDNOW payment of GBP 780 on 2026-09-12 to Lumen is wrong.",NO_REMEDY,NO_REMEDY,"Pending instant rail has no simulated recovery remedy"
+C06,Maya Patel,ACCT-SYN-000001|ACCT-SYN-000002,ACCT-SYN-000251|ACCT-SYN-000252,PMT-SYN-000001|PMT-SYN-000002,ACH,"I do not recognise the ACH payment of GBP 1250.",UNRESOLVED,CLARIFICATION_REQUIRED,"Two matching payments; ask customer to choose account/payment"
+C07,Maya Patel,ACCT-SYN-000001,ACCT-SYN-004751,PMT-SYN-004501,ACH,"Someone took about GBP 73000 from my account on the 20th. It says Northwind.",UNAUTHORISED,MANUAL_REVIEW,"Approximate match; expired deadline; manual handling"
+C08,Unknown,,,,ACH,"Someone took about GBP 412 on the 4th. It says Northgate.",UNRESOLVED,CLARIFICATION_REQUIRED,"No candidate; request date, amount, or beneficiary"
+C09,Unknown,,,,UNKNOWN,"The payment is a problem.",UNRESOLVED,CLARIFICATION_REQUIRED,"No searchable facts; intake abstains"
+C10,Maya Patel,ACCT-SYN-000001,ACCT-SYN-000251,PMT-SYN-000001,ACH,"The ACH payment of GBP 1250 on 2026-01-02 to Northwind was a wrong payment.",ERRONEOUS,MANUAL_REVIEW,"Erroneous category but deadline expired"
+C11,Maya Patel,ACCT-SYN-000001,ACCT-SYN-000251,PMT-SYN-000001,ACH,"The ACH payment of GBP 1250 on 2026-01-02 to Northwind was a scam payment.",AUTHORISED_BUT_SCAMMED,MANUAL_REVIEW,"Scam category but deadline expired"
+C12,Sam Rivera,ACCT-SYN-000003,ACCT-SYN-004027,PMT-SYN-003777,ACH,"I sent GBP 152788.25 for Cedar on the 24th and did not authorise it.",UNAUTHORISED,READY_FOR_REVIEW,"Exact match; 60-day deadline calculated from 2026-09-24"

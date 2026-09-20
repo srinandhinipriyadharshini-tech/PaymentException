@@ -7,9 +7,9 @@ REQUIRED = (
     "ai/matching.py",
     "ai/classification.py",
     "ai/drafting.py",
-    "platform/ai_contract.py",
-    "platform/guardrails.py",
-    "platform/tracer.py",
+    "app_platform/ai_contract.py",
+    "app_platform/guardrails.py",
+    "app_platform/tracer.py",
     "run.py",
     "Makefile",
 )

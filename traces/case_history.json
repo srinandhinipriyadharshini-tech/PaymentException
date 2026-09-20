@@ -537,6 +537,260 @@
         "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category ERRONEOUS. This request does not guarantee recovery.",
         "redacted": true,
         "agent_confirmed": false
+      },
+      {
+        "case_id": "CASE-SYN-300363",
+        "case_status": "READY_FOR_REVIEW",
+        "claim_category": "AUTHORISED_BUT_SCAMMED",
+        "category": "AUTHORISED_BUT_SCAMMED",
+        "request_status": "DRAFT_READY",
+        "reference_id": null,
+        "rail": "ACH",
+        "remedy_available": true,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "1250",
+          "amount_max": "1250",
+          "date_min": "2026-01-02",
+          "date_max": "2026-01-02",
+          "day_of_month": null,
+          "month_of_year": null,
+          "beneficiary_description": "Northwind",
+          "customer_reason": "authorised but scammed",
+          "rail": "ACH"
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000001",
+                "rail": "ACH",
+                "amount": "1250.00",
+                "currency": "GBP",
+                "value_date": "2026-01-02",
+                "settlement_timestamp": "2026-01-02T09:00:00",
+                "debtor_account": "ACCT-SYN-000001",
+                "creditor_account": "ACCT-SYN-000251",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "date",
+                "trading name"
+              ]
+            },
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000002",
+                "rail": "ACH",
+                "amount": "1250.00",
+                "currency": "GBP",
+                "value_date": "2026-01-02",
+                "settlement_timestamp": "2026-01-02T09:00:00",
+                "debtor_account": "ACCT-SYN-000002",
+                "creditor_account": "ACCT-SYN-000252",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "date",
+                "trading name"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-000001",
+          "rail": "ACH",
+          "amount": "1250.00",
+          "currency": "GBP",
+          "value_date": "2026-01-02",
+          "settlement_timestamp": "2026-01-02T09:00:00",
+          "debtor_account": "ACCT-SYN-000001",
+          "creditor_account": "ACCT-SYN-000251",
+          "creditor_registered_name": "Northwind Supplies Ltd",
+          "creditor_trading_name": "Northwind",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "AUTHORISED_BUT_SCAMMED",
+          "action": "Open an authorised-scam investigation",
+          "rationale": "Synthetic demo rule for an authorised but scammed payment.",
+          "available": true,
+          "requires_human_review": true
+        },
+        "deadline": "2026-03-03",
+        "confidence": 0.92,
+        "clarification_question": null,
+        "customer_message": "We recorded your authorised_but_scammed claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category AUTHORISED_BUT_SCAMMED. This request does not guarantee recovery.",
+        "redacted": true,
+        "agent_confirmed": false
+      },
+      {
+        "case_id": "CASE-SYN-806145",
+        "case_status": "SUBMITTED_SIMULATED",
+        "claim_category": "AUTHORISED_BUT_SCAMMED",
+        "category": "AUTHORISED_BUT_SCAMMED",
+        "request_status": "SIMULATED_SUBMITTED",
+        "reference_id": "SIM-WIRE-806145",
+        "rail": "WIRE",
+        "remedy_available": true,
+        "agent_approval_required": true,
+        "agent_approved": true,
+        "extracted_facts": {
+          "amount_min": "12500",
+          "amount_max": "12500",
+          "date_min": "2026-08-14",
+          "date_max": "2026-08-14",
+          "day_of_month": null,
+          "month_of_year": null,
+          "beneficiary_description": "Blue Oak",
+          "customer_reason": "authorised but scammed",
+          "rail": "WIRE"
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004998",
+                "rail": "WIRE",
+                "amount": "12500.00",
+                "currency": "GBP",
+                "value_date": "2026-08-14",
+                "settlement_timestamp": "2026-08-14T09:00:00",
+                "debtor_account": "ACCT-SYN-000006",
+                "creditor_account": "ACCT-SYN-005248",
+                "creditor_registered_name": "Blue Oak Services Ltd",
+                "creditor_trading_name": "Blue Oak",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "date",
+                "trading name"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-004998",
+          "rail": "WIRE",
+          "amount": "12500.00",
+          "currency": "GBP",
+          "value_date": "2026-08-14",
+          "settlement_timestamp": "2026-08-14T09:00:00",
+          "debtor_account": "ACCT-SYN-000006",
+          "creditor_account": "ACCT-SYN-005248",
+          "creditor_registered_name": "Blue Oak Services Ltd",
+          "creditor_trading_name": "Blue Oak",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "AUTHORISED_BUT_SCAMMED",
+          "action": "Open an authorised-scam investigation",
+          "rationale": "Synthetic demo rule for an authorised but scammed payment.",
+          "available": true,
+          "requires_human_review": true
+        },
+        "deadline": "2026-10-13",
+        "confidence": 0.92,
+        "clarification_question": null,
+        "customer_message": "We recorded your authorised_but_scammed claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category AUTHORISED_BUT_SCAMMED. This request does not guarantee recovery.",
+        "redacted": true,
+        "agent_confirmed": false
+      },
+      {
+        "case_id": "CASE-SYN-890680",
+        "case_status": "CLARIFICATION_REQUIRED",
+        "claim_category": null,
+        "category": null,
+        "request_status": "NOT_CREATED",
+        "reference_id": null,
+        "rail": null,
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "6000.00",
+          "amount_max": "10000.00",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": null,
+          "month_of_year": null,
+          "beneficiary_description": "the plumber last Tuesday",
+          "customer_reason": "",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": null,
+        "remedy": null,
+        "deadline": null,
+        "confidence": 0.0,
+        "clarification_question": "Please provide an amount, date, or beneficiary so we can locate the payment.",
+        "customer_message": "",
+        "interbank_request": "",
+        "redacted": true,
+        "agent_confirmed": false
+      },
+      {
+        "case_id": "CASE-SYN-361169",
+        "case_status": "CLARIFICATION_REQUIRED",
+        "claim_category": null,
+        "category": null,
+        "request_status": "NOT_CREATED",
+        "reference_id": null,
+        "rail": null,
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "6000.00",
+          "amount_max": "10000.00",
+          "date_min": null,
+          "date_max": null,
+          "day_of_month": null,
+          "month_of_year": null,
+          "beneficiary_description": "the plumber last Tuesday",
+          "customer_reason": "",
+          "rail": null
+        },
+        "ranked_candidates": {
+          "candidates": [],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": null,
+        "remedy": null,
+        "deadline": null,
+        "confidence": 0.0,
+        "clarification_question": "Please provide an amount, date, or beneficiary so we can locate the payment.",
+        "customer_message": "",
+        "interbank_request": "",
+        "redacted": true,
+        "agent_confirmed": false
       }
     ],
     "Jordan Lee": [
@@ -1106,10 +1360,56 @@
         "role": "agent",
         "text": "Thank you for confirming. We raised the simulated inter-bank request SIM-ACH-633917. This is a request only and does not guarantee recovery; the receiving institution may decline it or the funds may no longer be available. Payment details: GBP 152,788.25 on 2026-09-24 to Cedar Works via ACH. Deadline: 2026-10-24. No real bank was contacted."
       }
+    ],
+    "CASE-SYN-300363": [
+      {
+        "role": "customer",
+        "text": "The ACH payment of \u00a31250 on 2026-01-02 to Northwind was authorised by me, but I was scammed."
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your authorised_but_scammed claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available. Please confirm that you mean the GBP 1,250.00 payment on 2026-01-02 to Northwind. Once you confirm, we can raise a simulated inter-bank request. This is not a guarantee of recovery; the receiving institution may decline it or the funds may no longer be available. However, the payment-exception deadline passed on 2026-03-03; I am routing this for manual review rather than raising a late request."
+      }
+    ],
+    "CASE-SYN-806145": [
+      {
+        "role": "customer",
+        "text": "The WIRE payment of \u00a312500 on 2026-08-14 to Blue Oak was authorised by me, but I was scammed."
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your authorised_but_scammed claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available. Please confirm that you mean the GBP 12,500.00 payment on 2026-08-14 to Blue Oak. Once you confirm, we can raise a simulated inter-bank request. This is not a guarantee of recovery; the receiving institution may decline it or the funds may no longer be available."
+      },
+      {
+        "role": "customer",
+        "text": "yes i confirm"
+      },
+      {
+        "role": "agent",
+        "text": "Thank you. Your confirmation was received. The simulated request will be submitted automatically."
+      },
+      {
+        "role": "agent",
+        "text": "[processing] Simulated inter-bank request..."
+      },
+      {
+        "role": "agent",
+        "text": "Thank you for confirming. We raised the simulated inter-bank request SIM-WIRE-806145. This is a request only and does not guarantee recovery; the receiving institution may decline it or the funds may no longer be available. Payment details: GBP 12,500.00 on 2026-08-14 to Blue Oak via WIRE. Deadline: 2026-10-13. No real bank was contacted."
+      }
+    ],
+    "CASE-SYN-890680": [
+      {
+        "role": "customer",
+        "text": "I sent around eight thousand to the plumber last Tuesday."
+      },
+      {
+        "role": "agent",
+        "text": "Please provide an amount, date, or beneficiary so we can locate the payment."
+      }
     ]
   },
   "drafts": {
-    "Maya Patel": "sent $152788.25 for Cedar on 24th i didnt authorized",
+    "Maya Patel": "I sent around eight thousand to the plumber last Tuesday.",
     "Jordan Lee": "someone took about $1000 from my account on the 2nd ., i never authorized it. it says Northwind",
     "Sam Rivera": "i never authorized Lumen, 29th around $30000 Clarification: on the 4th",
     "Alex Morgan": "i never authorized for Works for around $400 on 2nd",

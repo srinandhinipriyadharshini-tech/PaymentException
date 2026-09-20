@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ai.demo_adapter import DemoAIAdapter
 from core.models import Category, ExtractedFacts, Payment
-from platform.ai_contract import AILayer, AIResult, Citation
+from app_platform.ai_contract import AILayer, AIResult, Citation
 
 
 class ClassificationAI(AILayer):

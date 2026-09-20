@@ -26,6 +26,12 @@ USERS = {
     "Taylor Kim": {"role": "Synthetic customer 06", "account": "ACCT-SYN-000006"},
 }
 
+VOICE_DEMO_SCENARIOS = {
+    "Scenario A - payment within 60 days": "I sent around eight thousand to the plumber last Tuesday.",
+    "Scenario B - expired payment": "I had a wrong charge of five hundred dollars back in June.",
+    "Scenario C - escalate to manual review": "No, that is not the right account, none of those are mine!",
+}
+
 CATEGORY_LABELS = {
     Category.ERRONEOUS: "Erroneous payment",
     Category.UNAUTHORISED: "Unauthorised payment",
@@ -288,9 +294,9 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
-    :root { --ink:#17233c; --muted:#68758a; --line:#dbe3ed; --paper:#eef3f8; --white:#fffdf9; --charcoal:#17233c; --teal:#087f75; --teal-soft:#dff3ee; --amber:#c47722; --amber-soft:#fff1d6; --red:#c24f56; --red-soft:#fbe7e7; --coral:#e77861; --navy-soft:#e7edf7; }
+    :root { --ink:#172b49; --muted:#60738d; --line:#d2e0ee; --paper:#eef6fc; --white:#ffffff; --charcoal:#172b49; --teal:#008f86; --teal-soft:#d8f7f0; --amber:#d77a16; --amber-soft:#fff0cf; --red:#d84f5b; --red-soft:#ffe5e8; --coral:#f06f5e; --navy-soft:#e6efff; }
     html, body, [class*="css"] { font-family:'DM Sans', sans-serif; color:var(--ink); }
-    .stApp { background-color:#f5f7f8; background-image:radial-gradient(circle at 8% 0%, rgba(231,120,97,.16), transparent 24rem), linear-gradient(rgba(23,35,60,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(23,35,60,.035) 1px, transparent 1px), linear-gradient(135deg, #eef3f8 0%, #fffdf9 55%, #e4f1ee 100%); background-size:auto, 28px 28px, 28px 28px, auto; }
+    .stApp { background-color:#f4f9fd; background-image:radial-gradient(circle at 7% -3%, rgba(240,111,94,.22), transparent 23rem), radial-gradient(circle at 94% 8%, rgba(71,143,236,.15), transparent 24rem), linear-gradient(rgba(23,43,73,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(23,43,73,.035) 1px, transparent 1px), linear-gradient(135deg, #eaf5ff 0%, #ffffff 52%, #e3faf4 100%); background-size:auto, auto, 28px 28px, 28px 28px, auto; }
     [data-testid="stAppViewContainer"] { background:transparent; }
     [data-testid="stMainBlockContainer"] { max-width:1480px; padding:2rem 3rem 4rem; }
     [data-testid="stVerticalBlock"] { gap:.65rem; }
@@ -305,10 +311,12 @@ st.markdown(
     h3 { font-size:1rem; margin:.45rem 0 .7rem; }
     .topbar { background:transparent; color:var(--ink); margin:-2rem -3rem 1.8rem; padding:.85rem 3rem; border-bottom:1px solid var(--line); box-shadow:none; }
     .topbar:after { content:""; display:block; height:2px; margin:.75rem 0 -.85rem; background:linear-gradient(90deg, var(--coral), var(--teal), transparent 72%); opacity:.7; }
+    .ops-link { float:right; display:inline-flex; align-items:center; gap:.4rem; margin-top:.1rem; padding:.48rem .72rem; border:1px solid #b9d7ea; border-radius:8px; background:#eaf5ff; color:#245d86 !important; font-size:.74rem; font-weight:700; text-decoration:none !important; box-shadow:0 3px 9px rgba(40,83,126,.08); }
+    .ops-link:hover { border-color:#008f86; background:#d8f7f0; color:#006e68 !important; }
     .brand-mark { display:inline-flex; align-items:center; gap:.6rem; font-family:'Space Grotesk'; font-weight:700; font-size:1rem; letter-spacing:.01em; }
     .brand-dot { display:inline-grid; place-items:center; width:1.9rem; height:1.9rem; border-radius:9px; background:linear-gradient(145deg, var(--coral), #f09a73); color:#fff; font-size:.7rem; box-shadow:0 4px 12px rgba(231,120,97,.35); }
     .brand-sub { color:var(--muted); font-size:.7rem; margin-left:2.4rem; margin-top:-.12rem; letter-spacing:.02em; }
-    .hero { position:relative; overflow:hidden; background:linear-gradient(115deg, rgba(255,253,249,.96), rgba(235,245,244,.9)); color:var(--ink); margin:0 0 1.15rem; padding:1.45rem 1.55rem 1.5rem; border:1px solid rgba(219,227,237,.95); border-radius:16px; box-shadow:0 12px 30px rgba(23,35,60,.08); }
+    .hero { position:relative; overflow:hidden; background:linear-gradient(115deg, rgba(255,255,255,.98), rgba(226,250,245,.94) 72%, rgba(231,240,255,.9)); color:var(--ink); margin:0 0 1.15rem; padding:1.45rem 1.55rem 1.5rem; border:1px solid rgba(210,224,238,.98); border-radius:16px; box-shadow:0 12px 30px rgba(40,83,126,.1); }
     .hero:after { content:""; position:absolute; right:-4rem; top:-5rem; width:15rem; height:15rem; border:1px solid rgba(8,127,117,.18); border-radius:50%; box-shadow:0 0 0 1.5rem rgba(8,127,117,.045), 0 0 0 3rem rgba(8,127,117,.025); }
     .hero { animation:rise-in .45s ease-out both; }
     @keyframes rise-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
@@ -322,7 +330,7 @@ st.markdown(
     .badge-amber { background:var(--amber-soft); color:#8c5c15; }
     .badge-red { background:var(--red-soft); color:#9d3c3c; }
     .badge-neutral { background:#e9eeee; color:#5c6b6c; }
-    .meta-card { background:rgba(255,255,255,.88); border:1px solid var(--line); border-radius:9px; padding:.72rem .9rem; min-height:3.7rem; display:flex; flex-direction:column; justify-content:center; box-shadow:0 2px 9px rgba(31,43,45,.04); }
+    .meta-card { background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:9px; padding:.72rem .9rem; min-height:3.7rem; display:flex; flex-direction:column; justify-content:center; box-shadow:0 4px 12px rgba(40,83,126,.06); }
     .meta-card span { color:var(--muted); font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:.3rem; }
     .meta-card strong { font-size:.9rem; }
     .case-ref { text-align:right; padding:.2rem .15rem .8rem; }
@@ -335,7 +343,7 @@ st.markdown(
     .review-title strong { display:block; font-family:'Space Grotesk'; font-size:.98rem; }
     .review-title small { display:block; color:var(--muted); font-size:.72rem; margin-top:.12rem; }
     .status-box { text-align:right; padding-top:.3rem; }
-    .panel, .info-card, .candidate-card, .decision-card, .output-card, .empty-card { background:rgba(255,253,249,.9); border:1px solid rgba(219,227,237,.95); border-radius:12px; box-shadow:0 8px 20px rgba(23,35,60,.06); backdrop-filter:blur(8px); }
+    .panel, .info-card, .candidate-card, .decision-card, .output-card, .empty-card { background:rgba(255,255,255,.94); border:1px solid rgba(210,224,238,.98); border-radius:12px; box-shadow:0 8px 20px rgba(40,83,126,.08); backdrop-filter:blur(8px); }
     .info-card, .candidate-card, .decision-card, .output-card, .empty-card { padding:1.05rem 1.15rem; }
     .fact-row { display:flex; justify-content:space-between; gap:1rem; border-bottom:1px solid #edf1f0; padding:.56rem 0; font-size:.85rem; }
     .fact-row:last-child { border-bottom:0; }
@@ -345,7 +353,7 @@ st.markdown(
     .candidate-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:.8rem; font-size:.84rem; }
     .candidate-grid b, .muted { color:var(--muted); font-size:.78rem; }
     .evidence { background:var(--teal-soft); border-left:3px solid var(--teal); margin-top:1rem; padding:.65rem .75rem; font-size:.8rem; }
-    .candidate-choice { border:1px solid #ecd9ae; background:linear-gradient(105deg, #fffaf0, #fffdf9); border-radius:9px; padding:.75rem .85rem; margin:.5rem 0; font-size:.84rem; box-shadow:0 3px 9px rgba(196,119,34,.08); }
+    .candidate-choice { border:1px solid #f0d295; background:linear-gradient(105deg, #fff7df, #ffffff); border-radius:9px; padding:.75rem .85rem; margin:.5rem 0; font-size:.84rem; box-shadow:0 3px 9px rgba(215,122,22,.1); }
     .bubble { border-radius:10px; padding:.8rem .95rem; margin:.55rem 0; line-height:1.45; font-size:.86rem; }
     .bubble span { display:block; font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:.3rem; }
     .bubble.customer { background:#fff; border:1px solid var(--line); }
@@ -410,13 +418,17 @@ if "drafts" not in st.session_state:
     st.session_state.drafts = {name: "" for name in USERS}
 if "transcript_confirmed" not in st.session_state:
     st.session_state.transcript_confirmed = {name: False for name in USERS}
+if "voice_transcripts" not in st.session_state:
+    st.session_state.voice_transcripts = {name: "" for name in USERS}
 if "sent_replies" not in st.session_state:
     st.session_state.sent_replies = {}
 if "chat_threads" not in st.session_state:
     st.session_state.chat_threads = {}
 
 st.markdown('<div class="topbar"><div class="brand-mark"><span class="brand-dot">CL</span>Clearline</div><div class="brand-sub">Payment exceptions workspace</div></div>', unsafe_allow_html=True)
-nav_left, nav_demo, nav_user, nav_clear = st.columns([4.6, 1.4, 2.2, 1.6], gap="medium")
+nav_left, nav_ops, nav_demo, nav_user, nav_clear = st.columns([3.2, 1.8, 1.4, 2.2, 1.6], gap="medium")
+with nav_ops:
+    st.link_button("Operations console", "http://localhost:8502", icon=":material/open_in_new:", width="stretch")
 with nav_demo:
     st.markdown(f'<div style="padding-top:.45rem;text-align:right">{status_badge("Synthetic demo", "teal")}</div>', unsafe_allow_html=True)
 with nav_user:
@@ -477,6 +489,28 @@ with left:
     st.markdown("### Customer intake")
     claim = st.text_area("Customer message", value=st.session_state.drafts[active_user], height=125, key=f"claim_{active_user}", placeholder="Example: I never authorised the ACH payment of £1250 on 2026-01-02 to Northwind.")
     audio = st.audio_input("🎙️ Record customer voice message", key=f"voice_{active_user}")
+    if audio:
+        st.audio(audio, format=audio.type)
+        st.caption("Voice recording captured. This offline demo maps the recording to a deterministic transcription scenario.")
+        scenario_options = ["Select a demo scenario"] + list(VOICE_DEMO_SCENARIOS)
+        voice_scenario = st.selectbox("Demo transcription scenario", scenario_options, key=f"voice_scenario_{active_user}")
+        scenario_selected = voice_scenario != "Select a demo scenario"
+        if scenario_selected:
+            st.markdown(f'<div class="output-card"><div class="output-label">Voice transcription preview</div>{safe_text(VOICE_DEMO_SCENARIOS[voice_scenario])}</div>', unsafe_allow_html=True)
+        else:
+            st.info("Choose a scenario to preview the deterministic transcript before processing the recording.")
+        if st.button("Transcribe & process voice", key=f"transcribe_voice_{active_user}", type="primary", disabled=not scenario_selected, width="stretch"):
+            voice_text = VOICE_DEMO_SCENARIOS[voice_scenario]
+            st.session_state.voice_transcripts[active_user] = voice_text
+            st.session_state.drafts[active_user] = voice_text
+            with st.spinner("Transcribing voice and searching candidate payments..."):
+                history.append(process_claim(voice_text))
+            st.session_state.active_case_ids[active_user] = history[-1].case_id
+            st.session_state.active_case_id = history[-1].case_id
+            save_saved_state()
+            st.rerun()
+    if st.session_state.voice_transcripts[active_user]:
+        st.markdown(f'<div class="output-card"><div class="output-label">Captured customer transcript</div>{safe_text(st.session_state.voice_transcripts[active_user])}</div>', unsafe_allow_html=True)
     transcript = st.text_area("Typed transcript fallback / review", key=f"transcript_{active_user}", height=80, placeholder="Paste the audio transcript here, then confirm it before processing.")
     if audio or transcript.strip():
         transcript_state = "Confirmed" if st.session_state.transcript_confirmed[active_user] else "Needs confirmation"

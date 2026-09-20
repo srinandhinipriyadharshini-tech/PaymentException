@@ -3,7 +3,7 @@ test:
 
 verify:
 	python verify.py
-	python -m compileall -q ai core platform eval run.py
+	python -m compileall -q ai app_platform core eval run.py
 
 score:
 	python -m eval.score

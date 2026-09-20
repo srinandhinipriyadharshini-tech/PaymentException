@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ai.demo_adapter import DemoAIAdapter
 from core.models import ExtractedFacts, Payment, RankedCandidates
-from platform.ai_contract import AILayer, AIResult, Citation
+from app_platform.ai_contract import AILayer, AIResult, Citation
 
 
 class MatchingAI(AILayer):

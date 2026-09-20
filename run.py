@@ -5,8 +5,8 @@ from pathlib import Path
 
 from core.workflow import process_claim
 from data.create_database import create_database
-from platform.guardrails import validate_result
-from platform.tracer import Trace
+from app_platform.guardrails import validate_result
+from app_platform.tracer import Trace
 
 DB = Path(__file__).resolve().parent / "data" / "payment_exceptions.duckdb"
 

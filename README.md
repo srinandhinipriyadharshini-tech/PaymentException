@@ -16,7 +16,7 @@ Expected test output ends with the current test count. Streamlit prints a local 
 
 ## UC-02 layer entry points
 
-The repository now exposes the UC-02-style boundaries in `ai/`: `IntakeAI`, `MatchingAI`, `ClassificationAI`, and `DraftingAI`. Their results use the structured envelope in `platform/ai_contract.py`; the implementation remains deterministic and offline.
+The repository now exposes the UC-02-style boundaries in `ai/`: `IntakeAI`, `MatchingAI`, `ClassificationAI`, and `DraftingAI`. Their results use the structured envelope in `app_platform/ai_contract.py`; the implementation remains deterministic and offline.
 
 ```powershell
 & ".\.venv\Scripts\python.exe" run.py case "I did not make the ACH payment of £1250 on 2026-01-02 to Northwind."
@@ -24,6 +24,22 @@ The repository now exposes the UC-02-style boundaries in `ai/`: `IntakeAI`, `Mat
 ```
 
 The `Makefile` provides `test`, `verify`, `score`, and `demo` targets for environments that provide `make`. `run.py` also writes a self-contained HTML trace under `traces/` and reports guardrail violations.
+
+## React operations console
+
+The judge-facing Admin & Operations Dashboard lives in `frontend/` as a standalone Vite + React + Tailwind + Recharts app.
+
+```powershell
+Set-Location frontend
+npm install
+npm run dev
+```
+
+It includes the deterministic 60-day SLA sandbox, case queue, cognitive routing trace, agentic audit verdict, and classification/triage analytics.
+
+The complete seven-slide presentation script, visual guidance, speaker notes, demo narrative, and UC-02 guidelines are in [UC02_PITCH_DECK_SCRIPT.md](UC02_PITCH_DECK_SCRIPT.md).
+
+The generated PowerPoint deck is [UC02_Core_Payment_Exceptions_Pitch.pptx](UC02_Core_Payment_Exceptions_Pitch.pptx). The editable generator is [tools/create_pitch_deck.py](tools/create_pitch_deck.py).
 
 The regenerated demo data includes July, August, and September scenarios across ACH, WIRE, RTP, and FEDNOW, including expired settled payments and a pending in-progress FEDNOW payment.
 
