@@ -40,10 +40,10 @@ CATEGORY_LABELS = {
 }
 
 REASON_CODES = {
-    Category.ERRONEOUS: "ERR_RETURN_REVIEW",
-    Category.UNAUTHORISED: "UNAUTHORISED_INVESTIGATION",
-    Category.AUTHORISED_BUT_SCAMMED: "SCAM_INVESTIGATION",
-    Category.NO_REMEDY: "INSTANT_PAYMENT_NO_REMEDY",
+    Category.ERRONEOUS: "SYN_R02",
+    Category.UNAUTHORISED: "SYN_R10",
+    Category.AUTHORISED_BUT_SCAMMED: "SYN_R10",
+    Category.NO_REMEDY: "none",
 }
 
 
@@ -101,7 +101,17 @@ def load_saved_state() -> tuple[dict[str, list[CaseResult]], dict[str, list[dict
             for name in USERS
         }
         drafts = {name: saved.get("drafts", {}).get(name, "") for name in USERS}
-        return histories, saved.get("chat_threads", {}), drafts
+        chat_threads = saved.get("chat_threads", {})
+        for name, items in histories.items():
+            if not items or not drafts[name]:
+                continue
+            latest = items[-1]
+            if latest.clarification_question and latest.extracted_facts.amount_min is None and any(marker in drafts[name].lower() for marker in ("about ", "around ", "approximately ", "approx ")):
+                refreshed = process_claim(drafts[name], DATABASE_PATH, debtor_account=USERS[name]["account"])
+                refreshed.case_id = latest.case_id
+                items[-1] = refreshed
+                chat_threads.pop(refreshed.case_id, None)
+        return histories, chat_threads, drafts
     except (OSError, ValueError):
         return empty, {}, {}
 
@@ -145,16 +155,26 @@ def clear_user_history(user_name: str) -> None:
     save_saved_state()
 
 
+def sync_active_user() -> None:
+    st.session_state.active_user = st.session_state.user_selector
+
+
+def mark_reply_submitted(input_key: str, flag_key: str) -> None:
+    st.session_state[flag_key] = st.session_state.get(input_key, "")
+    st.session_state[input_key] = ""
+
+
 def customer_response(result: CaseResult) -> str:
     response = result.customer_message
     payment = result.selected_payment
     if payment and not result.clarification_question:
+        if result.category is Category.AUTHORISED_BUT_SCAMMED:
+            return f"We recorded your authorised-but-scammed claim for the {payment.rail} payment. This claim requires manual review. No recovery is promised and no inter-bank request will be raised automatically."
         if result.remedy and not result.remedy.available:
-            response += f" The {payment.rail} rail does not provide a recovery request for this case, so no inter-bank request will be raised."
-        else:
-            response += f" Please confirm that you mean the {payment.currency} {payment.amount:,.2f} payment on {payment.value_date} to {payment.creditor_trading_name}. Once you confirm, we can raise a simulated inter-bank request. This is not a guarantee of recovery; the receiving institution may decline it or the funds may no longer be available."
+            return response + f" The {payment.rail} rail does not provide a recovery request for this case, so no inter-bank request will be raised. This case is complete with no customer confirmation required."
         if result.deadline and result.deadline < date.today():
-            response += f" However, the payment-exception deadline passed on {result.deadline}; I am routing this for manual review rather than raising a late request."
+            return response + f" The payment-exception deadline passed on {result.deadline}; I am routing this for manual review. No late request will be raised and no customer confirmation is required."
+        response += f" Please confirm that you mean the {payment.currency} {payment.amount:,.2f} payment on {payment.value_date} to {payment.creditor_trading_name}. Once you confirm, we can raise a simulated inter-bank request. This is not a guarantee of recovery; the receiving institution may decline it or the funds may no longer be available."
     return response
 
 
@@ -170,6 +190,17 @@ def clarification_response(result: CaseResult) -> str:
             )
         response += " " + " ".join(choices)
     return response
+
+
+def clarification_placeholder(result: CaseResult) -> str:
+    question = (result.clarification_question or "").lower()
+    if "payment date" in question or "date" in question:
+        return "Reply with the payment date, for example: 2026-09-05"
+    if "confirm this payment" in question or "approximate amount" in question:
+        return "Reply: Yes, I confirm this payment, or No, option 2"
+    if "which" in question or "option" in question:
+        return "Reply with an option number, for example: option 1"
+    return "Reply with the missing amount, date, beneficiary, or option"
 
 
 def request_id_for(result: CaseResult) -> str:
@@ -284,7 +315,7 @@ def render_result(result: CaseResult, history: list[CaseResult], active_user: st
             deadline = result.deadline or "No deadline"
             availability = "Expired - manual review" if expired else "Available" if result.remedy.available else "Unavailable"
             deadline_label = f"{deadline} (passed)" if expired else str(deadline)
-            st.markdown(f'<div class="decision-card"><div>{status_badge(availability, remedy_tone)}</div><h3>{safe_text("Deadline passed; manual review required" if expired else result.remedy.action)}</h3><p class="muted">Deterministic synthetic rule output</p><div class="fact-row"><span>Message type</span><strong>{safe_text(result.claim_category.value if result.claim_category else "PENDING")}</strong></div><div class="fact-row"><span>Reason code</span><strong>{safe_text(REASON_CODES.get(result.claim_category, "PENDING_REVIEW"))}</strong></div><div class="fact-row"><span>Deadline</span><strong>{safe_text(deadline_label)}</strong></div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="decision-card"><div>{status_badge(availability, remedy_tone)}</div><h3>{safe_text("Deadline passed; manual review required" if expired else result.remedy.action)}</h3><p class="muted">Deterministic synthetic rule output</p><div class="fact-row"><span>Message type</span><strong>{safe_text(result.remedy.message_type)}</strong></div><div class="fact-row"><span>Reason code</span><strong>{safe_text(result.remedy.reason_code)}</strong></div><div class="fact-row"><span>Deadline</span><strong>{safe_text(deadline_label)}</strong></div></div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="waiting-card"><strong>Remedy and deadline</strong><span>Shown after the customer confirms the payment in chat.</span></div>', unsafe_allow_html=True)
 
@@ -405,6 +436,8 @@ st.markdown(
 
 if "active_user" not in st.session_state:
     st.session_state.active_user = "Maya Patel"
+if "user_selector" not in st.session_state:
+    st.session_state.user_selector = st.session_state.active_user
 if "active_case_id" not in st.session_state:
     st.session_state.active_case_id = None
 if "active_case_ids" not in st.session_state:
@@ -432,8 +465,8 @@ with nav_ops:
 with nav_demo:
     st.markdown(f'<div style="padding-top:.45rem;text-align:right">{status_badge("Synthetic demo", "teal")}</div>', unsafe_allow_html=True)
 with nav_user:
-    active_user = st.selectbox("Demo user", list(USERS), index=list(USERS).index(st.session_state.active_user), label_visibility="collapsed")
-    st.session_state.active_user = active_user
+    st.selectbox("Demo user", list(USERS), key="user_selector", on_change=sync_active_user, label_visibility="collapsed")
+    active_user = st.session_state.user_selector
 with nav_clear:
     st.markdown('<div style="height:.18rem"></div>', unsafe_allow_html=True)
     if st.button("Clear history", key=f"clear_history_{active_user}", width="stretch"):
@@ -475,19 +508,28 @@ with head_c:
     st.markdown(f'<div class="case-ref"><span>Claim category</span><strong>{safe_text(claim_label)}</strong></div>', unsafe_allow_html=True)
 
 st.markdown(f'<div class="status-strip"><span><b>Case status</b> {status_badge(case_label, status_tone)}</span><span><b>Claim category</b> {safe_text(claim_label)}</span><span><b>Request status</b> {safe_text(request_label)}</span></div>', unsafe_allow_html=True)
-st.download_button("Download 6,000 test payments", data=payment_data_csv(), file_name="payment_exceptions_6000.csv", mime="text/csv", width="stretch")
+st.download_button("Download current 6,000 payments", data=payment_data_csv(), file_name="payment_exceptions_current_6000.csv", mime="text/csv", width="stretch")
 
 if current and current.clarification_question:
     st.markdown(f'<div class="alert-clarification"><strong>Clarification needed from customer</strong><br><span class="muted">More information is required before the payment can be confirmed.</span></div>', unsafe_allow_html=True)
 elif current and current.case_status is CaseStatus.ESCALATED:
-    st.markdown('<div class="alert-clarification"><strong>Manual research required</strong><br><span class="muted">The payment could not be matched from the conversation. Review the customer account and transaction history before raising any request.</span></div>', unsafe_allow_html=True)
+    if current.category is Category.AUTHORISED_BUT_SCAMMED and current.selected_payment:
+        escalation_message = "The payment was matched, but authorised-scam claims require manual review. No recovery is promised and no request will be raised automatically."
+    elif current.selected_payment and current.deadline and current.deadline < date.today():
+        escalation_message = f"The payment was matched, but the configured deadline passed on {current.deadline}. No late request will be raised."
+    else:
+        escalation_message = "The payment could not be matched from the conversation. Review the customer account and transaction history before raising any request."
+    st.markdown(f'<div class="alert-clarification"><strong>Manual research required</strong><br><span class="muted">{safe_text(escalation_message)}</span></div>', unsafe_allow_html=True)
 
 st.divider()
 left, right = st.columns([1.05, .95], gap="large")
 with left:
     st.markdown('<div class="section-kicker">01 / Claim conversation</div>', unsafe_allow_html=True)
     st.markdown("### Customer intake")
-    claim = st.text_area("Customer message", value=st.session_state.drafts[active_user], height=125, key=f"claim_{active_user}", placeholder="Example: I never authorised the ACH payment of £1250 on 2026-01-02 to Northwind.")
+    claim_key = f"claim_{active_user}"
+    if st.session_state.pop(f"reset_{claim_key}", False):
+        st.session_state[claim_key] = ""
+    claim = st.text_area("Customer message", value=st.session_state.drafts[active_user], height=125, key=claim_key, placeholder="Example: I never authorised the ACH payment of GBP 1250 on 2026-01-02 to Northwind.")
     audio = st.audio_input("🎙️ Record customer voice message", key=f"voice_{active_user}")
     if audio:
         st.audio(audio, format=audio.type)
@@ -504,14 +546,21 @@ with left:
             st.session_state.voice_transcripts[active_user] = voice_text
             st.session_state.drafts[active_user] = voice_text
             with st.spinner("Transcribing voice and searching candidate payments..."):
-                history.append(process_claim(voice_text))
+                voice_result = process_claim(voice_text, debtor_account=profile["account"])
+                history.append(voice_result)
+                st.session_state.chat_threads.setdefault(voice_result.case_id, []).append({"role": "customer", "text": voice_text})
             st.session_state.active_case_ids[active_user] = history[-1].case_id
             st.session_state.active_case_id = history[-1].case_id
+            st.session_state.drafts[active_user] = ""
+            st.session_state[f"reset_{claim_key}"] = True
             save_saved_state()
             st.rerun()
     if st.session_state.voice_transcripts[active_user]:
         st.markdown(f'<div class="output-card"><div class="output-label">Captured customer transcript</div>{safe_text(st.session_state.voice_transcripts[active_user])}</div>', unsafe_allow_html=True)
-    transcript = st.text_area("Typed transcript fallback / review", key=f"transcript_{active_user}", height=80, placeholder="Paste the audio transcript here, then confirm it before processing.")
+    transcript_key = f"transcript_{active_user}"
+    if st.session_state.pop(f"reset_transcript_{active_user}", False):
+        st.session_state[transcript_key] = ""
+    transcript = st.text_area("Typed transcript fallback / review", key=transcript_key, height=80, placeholder="Paste the transcript, confirm it, then process the claim.")
     if audio or transcript.strip():
         transcript_state = "Confirmed" if st.session_state.transcript_confirmed[active_user] else "Needs confirmation"
         st.markdown(f"Transcript state: {status_badge(transcript_state, 'teal' if transcript_state == 'Confirmed' else 'amber')}", unsafe_allow_html=True)
@@ -529,9 +578,14 @@ with left:
             try:
                 st.session_state.drafts[active_user] = text
                 with st.spinner("Extracting facts and searching synthetic payments..."):
-                    history.append(process_claim(text))
+                    result = process_claim(text, debtor_account=profile["account"])
+                    history.append(result)
+                    st.session_state.chat_threads.setdefault(result.case_id, []).append({"role": "customer", "text": text})
                 st.session_state.active_case_ids[active_user] = history[-1].case_id
                 st.session_state.active_case_id = history[-1].case_id
+                st.session_state.drafts[active_user] = ""
+                st.session_state[f"reset_{claim_key}"] = True
+                st.session_state[f"reset_transcript_{active_user}"] = True
                 save_saved_state()
                 st.session_state.transcript_confirmed[active_user] = False
                 st.rerun()
@@ -557,8 +611,14 @@ with left:
                 st.markdown(f'<div class="wa-message {bubble_class}"><span>{label}</span>{safe_text(message["text"])}</div>', unsafe_allow_html=True)
 
             if current.clarification_question:
-                clarification = st.text_input("Reply with clarification", key=f"clarification_{active_user}_{current.case_id}", label_visibility="collapsed", placeholder="Reply with the missing date, rail, amount, or beneficiary")
-                if st.button("Send clarification", key=f"send_clarification_{active_user}_{current.case_id}", type="primary", width="stretch"):
+                clarification_key = f"clarification_{active_user}_{current.case_id}"
+                clarification_submit_key = f"submit_clarification_{active_user}_{current.case_id}"
+                clarification_reset_key = f"reset_clarification_{active_user}_{current.case_id}"
+                if st.session_state.pop(clarification_reset_key, False):
+                    st.session_state[clarification_key] = ""
+                clarification = st.text_input("Reply with clarification", key=clarification_key, label_visibility="collapsed", placeholder=clarification_placeholder(current), on_change=mark_reply_submitted, args=(clarification_key, clarification_submit_key))
+                if st.button("Send clarification", key=f"send_clarification_{active_user}_{current.case_id}", type="primary", width="stretch") or clarification_submit_key in st.session_state:
+                    clarification = st.session_state.pop(clarification_submit_key, clarification)
                     if clarification.strip():
                         clarification_text = clarification.strip()
                         normalized_clarification = clarification_text.lower().strip().replace("option ", "")
@@ -568,9 +628,14 @@ with left:
                             selected_index = int(normalized_clarification) - 1
                         else:
                             selected_index = ordinal_options.get(normalized_clarification)
+                        if normalized_clarification in {"yes", "y", "confirm", "confirmed", "yes i confirm", "i confirm", "yes confirm", "correct"} and candidates:
+                            selected_index = 0
                         if normalized_clarification in {"both", "all", "both payments"} and len(candidates) >= 2:
                             thread.append({"role": "customer", "text": clarification_text})
                             thread.append({"role": "agent", "text": "I found two matching payments, but one request can cover only one payment. Please reply first or second, or provide a different date, amount, or beneficiary."})
+                            st.session_state.pop(clarification_key, None)
+                            st.session_state.pop(clarification_submit_key, None)
+                            st.session_state[clarification_reset_key] = True
                             save_saved_state()
                             st.rerun()
                         if normalized_clarification in {"no", "neither", "none", "none of these", "none of them", "not these", "not either"}:
@@ -578,6 +643,7 @@ with left:
                             current.case_status = CaseStatus.ESCALATED
                             current.clarification_question = None
                             thread.append({"role": "agent", "text": "I could not match this payment after the details provided. I am escalating the case for manual payment research. No request will be raised until an agent verifies the transaction."})
+                            st.session_state.pop(clarification_key, None)
                             save_saved_state()
                             st.rerun()
                         selected_payment_id = candidates[selected_index].payment.payment_id if selected_index is not None and selected_index < len(candidates) else None
@@ -585,7 +651,7 @@ with left:
                             clarification_text = f"on the {int(clarification_text)}th"
                         combined = f"{st.session_state.drafts[active_user]} Clarification: {clarification_text}"
                         with st.spinner("Searching synthetic payments and updating this case..."):
-                            updated = process_claim(combined, payment_id=selected_payment_id)
+                            updated = process_claim(combined, debtor_account=profile["account"], payment_id=selected_payment_id)
                         updated.case_id = current.case_id
                         history[-1] = updated
                         st.session_state.drafts[active_user] = combined
@@ -593,6 +659,9 @@ with left:
                         agent_text = customer_response(updated) if not updated.clarification_question else clarification_response(updated)
                         if agent_text:
                             thread.append({"role": "agent", "text": agent_text})
+                        st.session_state.pop(clarification_key, None)
+                        st.session_state.pop(clarification_submit_key, None)
+                        st.session_state[clarification_reset_key] = True
                         save_saved_state()
                         st.rerun()
                 st.caption("Your clarification stays in this conversation; it will not create a new case.")
@@ -616,16 +685,25 @@ with left:
                         save_saved_state()
                         st.rerun()
                     else:
-                        reply_text = st.text_input("Reply to customer", key=f"reply_{active_user}_{current.case_id}", label_visibility="collapsed", placeholder="Type: Yes, I confirm")
+                        reply_key = f"reply_{active_user}_{current.case_id}"
+                        reply_submit_key = f"submit_reply_{active_user}_{current.case_id}"
+                        reply_reset_key = f"reset_reply_{active_user}_{current.case_id}"
+                        if st.session_state.pop(reply_reset_key, False):
+                            st.session_state[reply_key] = ""
+                        reply_text = st.text_input("Reply to customer", key=reply_key, label_visibility="collapsed", placeholder="Reply: Yes, I confirm", on_change=mark_reply_submitted, args=(reply_key, reply_submit_key))
                         send_col, note_col = st.columns([1, 1], gap="small")
                         with send_col:
-                            if st.button("Send customer reply", key=f"send_reply_{active_user}_{current.case_id}", type="primary", width="stretch"):
+                            if st.button("Send customer reply", key=f"send_reply_{active_user}_{current.case_id}", type="primary", width="stretch") or reply_submit_key in st.session_state:
+                                reply_text = st.session_state.pop(reply_submit_key, reply_text)
                                 if reply_text.strip():
                                     normalized = reply_text.lower().replace("'", "")
                                     if "confirm" in normalized or normalized.strip() in {"yes", "yes i confirm", "y"}:
                                         thread.append({"role": "customer", "text": reply_text.strip()})
                                         thread.append({"role": "agent", "text": "Thank you. Your confirmation was received. The simulated request will be submitted automatically."})
                                         st.session_state[customer_confirmed_key] = True
+                                        st.session_state.pop(reply_key, None)
+                                        st.session_state.pop(reply_submit_key, None)
+                                        st.session_state[reply_reset_key] = True
                                         save_saved_state()
                                         st.rerun()
                                     else:
@@ -641,8 +719,10 @@ with left:
                         internal_note = st.text_area("Internal note", key=f"note_{active_user}_{current.case_id}", height=65, label_visibility="collapsed", placeholder="Add an internal note for the operations team...")
                         if internal_note:
                             st.caption("Internal note is visible to agents only.")
+            elif current.category is Category.AUTHORISED_BUT_SCAMMED and current.selected_payment:
+                st.markdown('<div class="chat-confirm"><strong>Manual review required</strong><br><span class="muted">The payment was matched. Authorised-scam claims are escalated with no recovery promise; customer confirmation is not required because no request will be submitted automatically.</span></div>', unsafe_allow_html=True)
             elif current.selected_payment and current.remedy and not current.remedy.available:
-                st.markdown('<div class="chat-confirm"><strong>No inter-bank request</strong><br><span class="muted">This rail does not provide a recovery remedy for the selected case.</span></div>', unsafe_allow_html=True)
+                st.markdown('<div class="chat-confirm"><strong>No inter-bank request</strong><br><span class="muted">No permitted recovery remedy exists for this selected payment under the configured rail rules.</span></div>', unsafe_allow_html=True)
             elif current.selected_payment and current.deadline and current.deadline < date.today():
                 st.markdown('<div class="chat-confirm"><strong>Manual review required</strong><br><span class="muted">The payment-exception deadline has passed. No late request will be raised automatically.</span></div>', unsafe_allow_html=True)
             else:

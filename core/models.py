@@ -65,9 +65,11 @@ class ExtractedFacts(BaseModel):
     date_max: Optional[date] = None
     day_of_month: Optional[int] = Field(default=None, ge=1, le=31)
     month_of_year: Optional[int] = Field(default=None, ge=1, le=12)
+    week_of_month: Optional[int] = Field(default=None, ge=1, le=5)
     beneficiary_description: Optional[str] = None
     customer_reason: Optional[str] = None
     rail: Optional[str] = None
+    customer_account: Optional[str] = None
 
 
 class CandidateMatch(BaseModel):
@@ -94,6 +96,10 @@ class Remedy(BaseModel):
     rationale: str
     available: bool
     requires_human_review: bool = False
+    message_type: str = "none"
+    reason_code: str = "none"
+    deadline_days: int | None = None
+    recovery_guaranteed: bool = False
 
 
 class CaseResult(BaseModel):

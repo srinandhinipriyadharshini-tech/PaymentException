@@ -20,6 +20,8 @@ class DraftingAI(AILayer):
         if not remedy.available:
             customer = f"No remedy is available for this {payment.rail} payment under the synthetic rulebook; the payment cannot be recovered through this process."
             interbank = f"No inter-bank request created: {payment.payment_id} on {payment.rail}; remedy unavailable."
+        else:
+            interbank = f"message_type={remedy.message_type}; reason_code={remedy.reason_code}; deadline_days={remedy.deadline_days}; recovery_guaranteed={str(remedy.recovery_guaranteed).upper()}; category={category.value}"
         return AIResult(
             value=CaseOutputs(customer_message=customer, interbank_request=interbank),
             confidence=0.9,

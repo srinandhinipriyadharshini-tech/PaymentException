@@ -39,6 +39,8 @@ class DemoAIAdapter(AIAdapter):
     def extract_claim(self, claim_text: str) -> ExtractedFacts:
         text, lowered = claim_text.strip(), claim_text.lower()
         amounts = [Decimal(value.replace(",", "")) for value in re.findall(r"(?:[$£]|gbp\s*)(\d+(?:,\d{3})?(?:\.\d{1,2})?)", text, re.I)]
+        amounts.extend(Decimal(value.replace(",", "")) for value in re.findall(r"(?:about|around|approximately|approx)\s+(?:[$£]|gbp\s*)?(\d+(?:,\d{3})?(?:\.\d{1,2})?)\b", lowered, re.I))
+        amounts.extend(Decimal(value.replace(",", "")) for value in re.findall(r"(?:payment|charge|transfer|sent)\s+(?:(?:about|around|approximately|approx)\s+)?(?:of\s+)?(?:[$£]|gbp\s*)?(\d+(?:,\d{3})?(?:\.\d{1,2})?)\b", lowered, re.I))
         amounts.extend(Decimal(value.replace(",", "")) * (1000 if suffix.lower() == "k" else 1) for value, suffix in re.findall(r"\b(\d+(?:,\d{3})?(?:\.\d{1,2})?)\s*(k|grand)\b", text, re.I))
         word_amounts = re.findall(r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|grand)(?:\s+(?:and\s+)?(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|grand)){0,10}\b", lowered)
         amounts.extend(parse_word_amount(value) for value in word_amounts if any(unit in value for unit in ("hundred", "thousand", "million", "grand")))
@@ -55,6 +57,16 @@ class DemoAIAdapter(AIAdapter):
             if day_match:
                 day_matches.append((day_match.start(), int(day_match.group(1))))
         months = {name: number for number, name in enumerate(("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"), 1)}
+        week_words = {"first": 1, "1st": 1, "second": 2, "2nd": 2, "third": 3, "3rd": 3, "fourth": 4, "4th": 4, "fifth": 5, "5th": 5}
+        week_matches = list(re.finditer(r"\b(first|1st|second|2nd|third|3rd|fourth|4th|fifth|5th)\s+week\b", lowered))
+        week_of_month = week_words[week_matches[-1].group(1)] if week_matches else None
+        if week_matches:
+            week_start = (week_of_month - 1) * 7 + 1
+            week_end = min(week_start + 6, 31)
+            day_matches = [(match.start(), value) for match in day_matches if not (match[0] >= week_matches[-1].start() - 4 and match[0] <= week_matches[-1].end() + 4)]
+            if month_matches := list(re.finditer(r"\b(" + "|".join(months) + r")\b", lowered)):
+                month_number = months[month_matches[-1].group(1)]
+                dates.extend((date(2026, month_number, week_start), date(2026, month_number, week_end)))
         month_matches = list(re.finditer(r"\b(" + "|".join(months) + r")\b", lowered))
         month_day_matches = list(re.finditer(r"\b(" + "|".join(months) + r")\s+([12]\d|3[01]|[1-9])(?:st|nd|rd|th)?\b", lowered))
         for match in month_day_matches:
@@ -75,17 +87,20 @@ class DemoAIAdapter(AIAdapter):
         amount_max = max(amounts) if amounts else None
         if approximate and amount_min is not None:
             amount_min, amount_max = approximate_amount_range(amount_min)
-        return ExtractedFacts(amount_min=amount_min, amount_max=amount_max, date_min=min(dates) if dates else None, date_max=max(dates) if dates else None, day_of_month=day_matches[-1][1] if day_matches else None, month_of_year=months[month_matches[-1].group(1)] if month_matches else None, beneficiary_description=beneficiary, customer_reason=reason, rail=rail)
+        return ExtractedFacts(amount_min=amount_min, amount_max=amount_max, date_min=min(dates) if dates else None, date_max=max(dates) if dates else None, day_of_month=day_matches[-1][1] if day_matches else None, month_of_year=months[month_matches[-1].group(1)] if month_matches else None, week_of_month=week_of_month, beneficiary_description=beneficiary, customer_reason=reason, rail=rail)
 
     def rank_candidates(self, facts: ExtractedFacts, candidates: list[Payment]) -> list[CandidateMatch]:
         ranked = []
         for payment in candidates:
             score, reasons = 0.2, []
-            if facts.amount_min is not None and facts.amount_max is not None and facts.amount_min <= payment.amount <= facts.amount_max: score += 0.35; reasons.append("amount")
-            if facts.date_min and facts.date_max and facts.date_min <= payment.value_date <= facts.date_max: score += 0.25; reasons.append("date")
-            if facts.day_of_month and facts.day_of_month == payment.value_date.day: score += 0.25; reasons.append("day of month")
-            if facts.month_of_year and facts.month_of_year == payment.value_date.month: score += 0.25; reasons.append("month")
-            if facts.beneficiary_description and facts.beneficiary_description.lower() in payment.creditor_trading_name.lower(): score += 0.2; reasons.append("trading name")
+            score = 0.0
+            if facts.amount_min is not None and facts.amount_max is not None and facts.amount_min <= payment.amount <= facts.amount_max: score += 0.4; reasons.append("amount")
+            date_match = facts.date_min and facts.date_max and facts.date_min <= payment.value_date <= facts.date_max
+            date_match = date_match or (facts.day_of_month and facts.day_of_month == payment.value_date.day)
+            date_match = date_match or (facts.month_of_year and facts.month_of_year == payment.value_date.month)
+            if date_match: score += 0.25; reasons.append("date")
+            if facts.beneficiary_description and (facts.beneficiary_description.lower() in payment.creditor_trading_name.lower() or facts.beneficiary_description.lower() in payment.creditor_registered_name.lower()): score += 0.25; reasons.append("beneficiary name")
+            if facts.customer_account and facts.customer_account == payment.debtor_account: score += 0.1; reasons.append("customer account")
             ranked.append(CandidateMatch(payment=payment, confidence=min(score, 0.99), match_reasons=reasons))
         return sorted(ranked, key=lambda item: (-item.confidence, item.payment.payment_id))
 

@@ -31,6 +31,26 @@ def test_written_amount_is_extracted():
     assert facts.amount_max == 8000
 
 
+def test_around_amount_uses_requested_search_window():
+    facts = DemoAIAdapter().extract_claim("I sent payment around 1000 to Northwind")
+    assert facts.amount_min == 500
+    assert facts.amount_max == 1999
+
+
+def test_second_week_and_bare_payment_amount_match_seeded_payment():
+    result = process_claim("I made a mistake and sent payment 1800 on September second week", DB)
+    assert result.selected_payment and result.selected_payment.payment_id == "PMT-SYN-000006"
+    assert result.selected_payment.value_date.day == 9
+    assert result.category is Category.ERRONEOUS
+
+
+def test_second_week_without_payment_returns_specific_clarification():
+    result = process_claim("I made a mistake and sent payment 1810 on September second week", DB)
+    assert result.selected_payment is None
+    assert result.clarification_question
+    assert "week 2" in result.clarification_question
+
+
 def test_unmatched_amount_and_day_asks_for_correct_criteria():
     result = process_claim("someone took about $9000 from my account on the 20th, i never authorized it.", DB)
     assert "approximately 9000.00" in result.clarification_question
@@ -87,6 +107,19 @@ def test_explicit_payment_choice_resolves_duplicate():
     assert result.selected_payment and result.selected_payment.payment_id == "PMT-SYN-000002"
 
 
+def test_explicit_payment_choice_bypasses_low_confidence_clarification():
+    initial = process_claim("I sent around 1000 to Northwind, I authorised it but was scammed.", DB)
+    selected_payment_id = initial.ranked_candidates.candidates[0].payment.payment_id
+    result = process_claim(
+        "I sent around 1000 to Northwind, I authorised it but was scammed. Clarification: option 1",
+        DB,
+        payment_id=selected_payment_id,
+    )
+    assert result.selected_payment and result.selected_payment.payment_id == selected_payment_id
+    assert result.clarification_question is None
+    assert result.remedy and result.remedy.available
+
+
 def test_ambiguous_candidate_clarification():
     result = process_claim("I do not recognise the ACH payment of £1250.", DB)
     assert result.clarification_question and result.selected_payment is None
@@ -107,6 +140,23 @@ def test_unmatched_claim_returns_clarification():
     result = process_claim("someone took about $412 from my account on the 4th, i never authorized it. it says northgate.", DB)
     assert result.selected_payment is None
     assert result.clarification_question
+
+
+def test_claim_without_date_asks_before_classification():
+    result = process_claim("Payment of 3200 to Cedar was a scam.", DB, debtor_account="ACCT-SYN-000001")
+    assert result.case_status.value == "CLARIFICATION_REQUIRED"
+    assert result.selected_payment is None
+    assert "payment date" in result.clarification_question
+    assert result.category is None
+
+
+def test_approximate_amount_requires_transaction_confirmation():
+    result = process_claim("Payment around 2000 to Cedar on 2026-09-05 was a scam.", DB, debtor_account="ACCT-SYN-000001")
+    assert result.case_status.value == "CLARIFICATION_REQUIRED"
+    assert result.selected_payment is None
+    assert result.ranked_candidates.candidates[0].payment.payment_id == "PMT-SYN-004999"
+    assert "3200.00" in result.clarification_question
+    assert "confirm" in result.clarification_question.lower()
 
 
 def test_approximate_amount_and_day_find_available_record():

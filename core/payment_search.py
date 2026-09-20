@@ -14,9 +14,14 @@ def search_payments(facts: ExtractedFacts, db_path: Path = DB_PATH, limit: int =
     if facts.date_min is not None: clauses.append("value_date >= ?"); parameters.append(facts.date_min)
     if facts.date_max is not None: clauses.append("value_date <= ?"); parameters.append(facts.date_max)
     if facts.day_of_month is not None: clauses.append("EXTRACT(DAY FROM value_date) = ?"); parameters.append(facts.day_of_month)
+    if facts.week_of_month is not None:
+        week_start = (facts.week_of_month - 1) * 7 + 1
+        week_end = week_start + 6
+        clauses.append("EXTRACT(DAY FROM value_date) BETWEEN ? AND ?"); parameters.extend([week_start, week_end])
     month_of_year = getattr(facts, "month_of_year", None)
     if month_of_year is not None: clauses.append("EXTRACT(MONTH FROM value_date) = ?"); parameters.append(month_of_year)
     if facts.rail: clauses.append("rail = ?"); parameters.append(facts.rail)
+    if facts.customer_account: clauses.append("debtor_account = ?"); parameters.append(facts.customer_account)
     if facts.beneficiary_description:
         clauses.append("(lower(creditor_registered_name) LIKE ? OR lower(creditor_trading_name) LIKE ?)")
         term = f"%{facts.beneficiary_description.lower()}%"; parameters.extend([term, term])

@@ -92,6 +92,14 @@ If `npm` is not recognized after installing Node.js, close and reopen VS Code so
 
 ## 5. Run the applications
 
+For a live demo, the fastest option is to run the included launcher from the repository root:
+
+```powershell
+.\start_demo.ps1
+```
+
+It starts both Streamlit portals in separate PowerShell windows, opens the browser URLs, and preserves any service already using ports 8501 or 8502. Keep those two terminal windows open during the hackathon; closing them stops the local servers.
+
 Use separate terminals for each server.
 
 ### Customer portal
@@ -324,3 +332,100 @@ npm run build
 ```
 
 This document is the operational handoff. Keep it updated when a policy rule, fixture, port, provider, or demo scenario changes.
+
+8501 and 8502 are both working again and return 200 OK.
+
+For the hackathon, use the new one-command launcher from the project root:
+
+
+
+.\start_demo.ps1
+It will:
+
+Start the customer portal on http://localhost:8501
+Start the admin console on http://localhost:8502
+Open both browser pages
+Detect if either port is already running
+Keep existing services instead of starting duplicates
+Keep the two PowerShell windows open during the demo. Closing them stops the local servers.
+
+The launcher is:
+
+start_demo.ps1
+
+Its PowerShell syntax has been validated successfully.
+
+## 12. Final pre-push and AI Lab recovery checklist
+
+Run the following from the repository root before pushing:
+
+```powershell
+& ".\.venv\Scripts\python.exe" -m py_compile app.py admin_dashboard.py
+& ".\.venv\Scripts\python.exe" -m compileall -q ai app_platform core eval run.py
+& ".\.venv\Scripts\python.exe" -m pytest -q
+& ".\.venv\Scripts\python.exe" verify.py
+Set-Location frontend
+& "C:\Program Files\nodejs\npm.cmd" run build
+Set-Location ..
+git diff --check
+git status --short
+```
+
+Before running tests or rebuilding the DuckDB fixture, stop both Streamlit processes if they are running. DuckDB uses a file lock, so a live portal can prevent test setup or database regeneration.
+
+```powershell
+netstat -ano | Select-String ':8501|:8502'
+Stop-Process -Id <customer-process-id>,<admin-process-id> -Force
+& ".\.venv\Scripts\python.exe" data\create_database.py
+```
+
+The regenerated fixture must contain:
+
+- 6,000 payments total.
+- 1,000 payments for each of `ACCT-SYN-000001` through `ACCT-SYN-000006`.
+- ACH, WIRE, RTP, and FEDNOW rails.
+- Both `PENDING` and `SETTLED` statuses.
+
+Restart the demo after validation:
+
+```powershell
+.\start_demo.ps1
+```
+
+Expected URLs:
+
+- Customer portal: `http://localhost:8501/`
+- Admin console: `http://localhost:8502/`
+
+If the browser shows old customer results, use the customer sidebar **Clear history**, then submit the claim again. If the admin queue is empty after a new customer case, use **Refresh customer cases** in the admin sidebar. Admin approval is allowed only for escalated cases; agent-approved cases must remain visible without a second approval.
+
+Expected conversation checks:
+
+- Missing amount, beneficiary, or date produces a clarification request.
+- Approximate amounts show the matched transaction details and require transaction confirmation before classification.
+- `Yes, I confirm`, `confirm`, or `correct` selects the displayed transaction.
+- Expired cases escalate and do not submit a request.
+- Authorised-scam cases preserve their category, escalate, and do not promise recovery.
+- RTP/FEDNOW cases with moved funds do not promise recovery.
+- No-match and ambiguous cases do not create requests.
+
+If a portal still serves old behavior after a code change, stop the old process, restart the relevant Streamlit command, and hard-refresh the browser with `Ctrl+F5`. Confirm with:
+
+```powershell
+Invoke-WebRequest http://localhost:8501/ -UseBasicParsing
+Invoke-WebRequest http://localhost:8502/ -UseBasicParsing
+```
+
+Both responses should return status `200`.
+
+### Interpreting legacy test failures
+
+If pytest reports failures in the older workflow tests after pulling this version, check whether the assertion still expects the previous behavior:
+
+- Approximate `1000` used to mean `750..1250`; the current rule is `500..1999`.
+- Approximate claims now require transaction confirmation before classification, so `selected_payment` remains empty while clarification is pending.
+- Claims missing amount, beneficiary, or date now clarify before searching/classifying.
+- Authorised-scam claims preserve their category and escalate without a request.
+- The configured rail deadlines are 60 days for ACH unauthorised, 5 days for ACH erroneous, and 1 day for WIRE/RTP/FEDNOW configured requests.
+
+These failures indicate stale expectations in the local test file when the failure text mentions the old values or old automatic-selection behavior. Do not weaken the policy implementation to satisfy those old assertions; update the test expectation to the current rulebook and rerun `pytest -q`.

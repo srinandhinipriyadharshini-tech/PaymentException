@@ -37,6 +37,10 @@ def test_demo_month_and_status_scenarios():
         ("FEDNOW", "2026-09-12", "PENDING", False),
     ]
 
+def test_all_transactions_belong_to_the_six_customer_accounts():
+    connection = duckdb.connect(str(DB), read_only=True)
+    assert {row[0] for row in connection.execute("SELECT DISTINCT debtor_account FROM payments").fetchall()} == {f"ACCT-SYN-{index:06d}" for index in range(1, 7)}
+    assert connection.execute("SELECT COUNT(*) FROM payments WHERE status = 'PENDING'").fetchone()[0] > 0
 
 def test_new_users_have_recent_transactions():
     connection = duckdb.connect(str(DB), read_only=True)

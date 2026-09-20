@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import json
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -8,12 +10,63 @@ import streamlit as st
 
 st.set_page_config(page_title="Clearline Operations", page_icon=":shield:", layout="wide", initial_sidebar_state="expanded")
 
+HISTORY_PATH = Path(__file__).resolve().parent / "traces" / "case_history.json"
+
 CASES = [
     {"Case ID": "EXC-24091", "Customer": "Maya Patel", "Amount": "GBP 1,250", "Rail": "ACH", "Intent": "Authorised scam", "Confidence": 94, "Age": 18, "Merchant": "Northwind Supplies Ltd", "Date": "02 Jan 2026", "Risk": 12, "Request": "IR-ACH-8F41C2"},
     {"Case ID": "EXC-24088", "Customer": "Jordan Lee", "Amount": "GBP 73,000", "Rail": "WIRE", "Intent": "Unauthorised", "Confidence": 89, "Age": 47, "Merchant": "Northwind Supplies Ltd", "Date": "20 Jul 2026", "Risk": 28, "Request": "IR-WIR-2B01A9"},
     {"Case ID": "EXC-24083", "Customer": "Sam Rivera", "Amount": "GBP 3,200", "Rail": "RTP", "Intent": "No remedy", "Confidence": 97, "Age": 68, "Merchant": "Cedar Works Inc", "Date": "05 Sep 2026", "Risk": 8, "Request": "N/A"},
     {"Case ID": "EXC-24079", "Customer": "Alex Morgan", "Amount": "GBP 9,000", "Rail": "ACH", "Intent": "Erroneous", "Confidence": 91, "Age": 32, "Merchant": "Blue Oak Services Ltd", "Date": "25 Jul 2026", "Risk": 19, "Request": "IR-ACH-35D8AA"},
 ]
+
+
+def load_customer_cases() -> list[dict]:
+    if not HISTORY_PATH.exists():
+        return []
+    try:
+        saved = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    cases = []
+    for customer, history in saved.get("histories", {}).items():
+        for raw in history:
+            payment = raw.get("selected_payment")
+            deadline = raw.get("deadline")
+            payment = payment or {}
+            payment_date = payment.get("value_date", "")
+            age = max((date.today() - date.fromisoformat(payment_date)).days, 0) if payment_date else 0
+            case_status = raw.get("case_status", "READY_FOR_REVIEW")
+            request_status = raw.get("request_status", "NOT_CREATED")
+            remedy = raw.get("remedy") or {}
+            remedy_available = remedy.get("available", raw.get("remedy_available", False))
+            if case_status == "CLARIFICATION_REQUIRED":
+                state = "Needs Clarification"
+            elif case_status == "ESCALATED":
+                state = "Escalated"
+            elif case_status in {"NO_REMEDY", "CLOSED"} or not remedy_available:
+                state = "No-Remedy"
+            elif case_status == "SUBMITTED_SIMULATED":
+                state = "Simulated Request Raised"
+            elif request_status == "AGENT_APPROVED":
+                state = "Agent Approved"
+            else:
+                state = "Ready For Review"
+            cases.append({
+                "Case ID": raw.get("case_id", "Unknown"),
+                "Customer": customer,
+                "Amount": f"{payment.get('currency', '')} {payment.get('amount', '')}" if payment else "Not matched",
+                "Rail": payment.get("rail", "Unknown"),
+                "Intent": raw.get("category") or raw.get("claim_category") or "Unclassified",
+                "Confidence": round(float(raw.get("confidence", 0)) * 100),
+                "Age": age,
+                "Merchant": payment.get("creditor_trading_name", "Not matched"),
+                "Date": payment_date,
+                "Risk": 0,
+                "Request": raw.get("reference_id") or "N/A",
+                "State": state,
+                "SLA": "No remedy" if state == "No-Remedy" else f"{max((date.fromisoformat(deadline) - date.today()).days, 0)}d remaining" if deadline else "Awaiting match" if state == "Needs Clarification" else "No deadline",
+            })
+    return cases
 
 
 def state_for(case: dict, age: int) -> str:
@@ -35,6 +88,14 @@ def sla_for(case: dict, age: int) -> str:
 def badge(value: str) -> str:
     class_name = {"Simulated Request Raised": "good", "Escalated": "warn", "No-Remedy": "bad"}.get(value, "neutral")
     return f'<span class="badge {class_name}">{value}</span>'
+
+
+def can_admin_approve(state: str) -> bool:
+    return state == "Escalated"
+
+
+def can_admin_close(state: str) -> bool:
+    return state == "No-Remedy"
 
 
 def metric(label: str, value: str, detail: str, tone: str) -> None:
@@ -137,20 +198,23 @@ def render_secondary_view(view: str) -> None:
         return
 
     st.markdown("### Recent audit decisions")
-    ledger = pd.DataFrame([
-        {"Timestamp": "20 Sep 2026 09:42", "Case": "EXC-24091", "Verdict": "Safe to approve", "Operator": "Riya Kapoor", "Evidence": "3/3 checks passed"},
-        {"Timestamp": "20 Sep 2026 09:40", "Case": "EXC-24083", "Verdict": "No-remedy", "Operator": "Policy agent", "Evidence": "RTP finality"},
-        {"Timestamp": "20 Sep 2026 09:36", "Case": "EXC-24088", "Verdict": "Escalated", "Operator": "Pending", "Evidence": "Risk review required"},
-        {"Timestamp": "20 Sep 2026 09:31", "Case": "EXC-24079", "Verdict": "Request raised", "Operator": "Riya Kapoor", "Evidence": "IR-ACH-35D8AA"},
-    ])
-    st.dataframe(ledger, use_container_width=True, hide_index=True)
-    st.caption("Ledger entries are immutable demo records. No real bank or payment network is contacted.")
+    if st.session_state.admin_history:
+        st.dataframe(pd.DataFrame(st.session_state.admin_history), use_container_width=True, hide_index=True)
+    else:
+        st.info("No admin decisions recorded in this session.")
+    st.caption("Ledger entries are session records. No real bank or payment network is contacted.")
 
 
 def main() -> None:
     inject_css()
     if "email_events" not in st.session_state:
         st.session_state.email_events = []
+    if "admin_decisions" not in st.session_state:
+        st.session_state.admin_decisions = {}
+    if "admin_history" not in st.session_state:
+        st.session_state.admin_history = []
+    if "admin_cases" not in st.session_state:
+        st.session_state.admin_cases = load_customer_cases()
     st.sidebar.markdown("# Clearline")
     st.sidebar.caption("OPERATIONS CONSOLE")
     workspace = st.sidebar.selectbox("Workspace", ["Operations workspace", "Audit workspace"], label_visibility="collapsed")
@@ -159,6 +223,15 @@ def main() -> None:
     st.sidebar.divider()
     st.sidebar.success("Agent mesh healthy\n\n4 deterministic nodes online")
     st.sidebar.caption("Riya Kapoor · Principal operator")
+    if st.sidebar.button("Clear history", width="stretch"):
+        st.session_state.email_events = []
+        st.session_state.admin_decisions = {}
+        st.session_state.admin_history = []
+        st.session_state.admin_cases = []
+        st.rerun()
+    if st.sidebar.button("Refresh customer cases", width="stretch"):
+        st.session_state.admin_cases = load_customer_cases()
+        st.rerun()
 
     if workspace == "Audit workspace":
         render_secondary_view("Audit ledger")
@@ -178,30 +251,37 @@ def main() -> None:
     st.progress(min(age / 60, 1.0), text=f"SLA consumption: {age}/60 days")
 
     enriched = []
-    for item in CASES:
+    for item in st.session_state.admin_cases:
         row = dict(item)
-        row["State"] = state_for(item, age)
-        row["SLA"] = sla_for(item, age)
+        if item.get("State") in {"Ready For Review", "Agent Approved"}:
+            row["State"] = item["State"]
+        else:
+            row["State"] = state_for(item, age) if item.get("State") == "Simulated Request Raised" else item["State"]
+        row["SLA"] = item.get("SLA") or sla_for(item, age)
+        row["Decision"] = st.session_state.admin_decisions.get(item["Case ID"], "Pending admin action" if row["State"] == "Escalated" else "Not required")
         enriched.append(row)
     escalated = sum(item["State"] == "Escalated" for item in enriched)
     active = sum(item["State"] == "Simulated Request Raised" for item in enriched)
     blocked = sum(item["State"] == "No-Remedy" for item in enriched)
     metrics = st.columns(4)
-    with metrics[0]: metric("Escalated cases", str(8 + escalated), "+3.2% vs previous shift", "amber")
-    with metrics[1]: metric("Active simulated requests", str(17 + active), "92% within SLA window", "cyan")
-    with metrics[2]: metric("No-remedy decisions", str(4 + blocked), "Rail finality + expired SLA", "red")
+    with metrics[0]: metric("Escalated cases", str(escalated), "Awaiting admin decision", "amber")
+    with metrics[1]: metric("Active simulated requests", str(active), "From customer workspace", "cyan")
+    with metrics[2]: metric("No-remedy decisions", str(blocked), "Rail finality or expired SLA", "red")
     with metrics[3]: metric("Voice agent activity", "03", "+12% live · active calls", "cyan")
 
     st.markdown("## Cases requiring orchestration")
     filters = st.columns([2, 1, 1])
     with filters[0]: query = st.text_input("Search case, customer or beneficiary", placeholder="Search the queue", label_visibility="collapsed")
-    with filters[1]: rail = st.selectbox("Rail", ["All rails", "ACH", "WIRE", "RTP"], label_visibility="collapsed")
-    with filters[2]: status = st.selectbox("State", ["All states", "Escalated", "Simulated Request Raised", "No-Remedy"], label_visibility="collapsed")
+    with filters[1]: rail = st.selectbox("Rail", ["All rails", "ACH", "WIRE", "RTP", "FEDNOW"], label_visibility="collapsed")
+    with filters[2]: status = st.selectbox("State", ["All states", "Needs Clarification", "Escalated", "Ready For Review", "Agent Approved", "Simulated Request Raised", "No-Remedy"], label_visibility="collapsed")
     visible = [item for item in enriched if (not query or query.lower() in str(item).lower()) and (rail == "All rails" or item["Rail"] == rail) and (status == "All states" or item["State"] == status)]
-    table = pd.DataFrame([{key: item[key] for key in ["Case ID", "Customer", "Amount", "Rail", "Intent", "State", "SLA"]} for item in visible])
+    table = pd.DataFrame([{key: item[key] for key in ["Case ID", "Customer", "Amount", "Rail", "Intent", "State", "Decision", "SLA"]} for item in visible])
     st.dataframe(table, use_container_width=True, hide_index=True, column_config={"State": st.column_config.TextColumn("State"), "Confidence": st.column_config.ProgressColumn("Match", min_value=0, max_value=100)})
 
-    selected_id = st.selectbox("Deep-dive case", [item["Case ID"] for item in visible] or [CASES[0]["Case ID"]], label_visibility="collapsed")
+    if not visible:
+        st.info("No customer cases are available. Submit a case in the customer workspace or use Refresh customer cases.")
+        return
+    selected_id = st.selectbox("Deep-dive case", [item["Case ID"] for item in visible], label_visibility="collapsed")
     selected = next(item for item in enriched if item["Case ID"] == selected_id)
     st.markdown("## Deep-dive audit")
     left, right = st.columns([1.08, .92])
@@ -211,11 +291,24 @@ def main() -> None:
     with right:
         recommendation = "Preserve evidence and route to policy exception review. Do not raise a recovery request." if selected["State"] == "No-Remedy" else "Hold for senior analyst review before the SLA window closes." if selected["State"] == "Escalated" else "Safe to approve simulated interbank recovery request."
         st.markdown(f'<div class="audit-block"><h4>Agentic smart audit verdict</h4><p>Multi-agent pre-flight · 3 checks complete</p><div class="risk">{selected["Risk"]}% <span style="font-size:11px;color:#78909e;font-weight:400">fraud risk · {"LOW" if selected["Risk"] < 20 else "MODERATE"}</span></div><p><strong>Behavioral flag</strong><br>Customer profile is stable. No past buyer remorse claims detected in 12 months.</p><div class="recommendation"><strong>System recommendation</strong><p>{recommendation}</p></div></div>', unsafe_allow_html=True)
-        if selected["State"] == "No-Remedy":
-            st.error("Request blocked by policy: no late request or final-rail recovery request will be raised automatically.")
-        else:
+        decision = st.session_state.admin_decisions.get(selected["Case ID"])
+        if can_admin_approve(selected["State"]) and decision != "Admin approved":
             if st.button("Approve simulated request", type="primary", use_container_width=True):
-                st.success(f"Simulated request {selected['Request']} queued for human-approved submission. No guaranteed recovery.")
+                recipient = selected["Customer"].lower().replace(" ", ".") + "@example.test"
+                st.session_state.admin_decisions[selected["Case ID"]] = "Admin approved"
+                st.session_state.admin_history.append({"Case": selected["Case ID"], "Verdict": "Admin approved", "Operator": "Riya Kapoor", "Evidence": "Escalated case approved; customer email triggered"})
+                st.session_state.email_events.append({"Case": selected["Case ID"], "Recipient": recipient, "Subject": f"Payment exception update - {selected['Case ID']}"})
+                st.success(f"Simulated request {selected['Request']} approved and customer email triggered for {recipient}. No guaranteed recovery.")
+        elif decision == "Admin approved":
+            st.success("Admin approval recorded and customer email already triggered.")
+        elif can_admin_close(selected["State"]):
+            st.error("Request blocked by policy: no late request or final-rail recovery request will be raised automatically.")
+            if st.button("Close as no remedy", type="secondary", use_container_width=True):
+                st.session_state.admin_decisions[selected["Case ID"]] = "Closed as no remedy"
+                st.session_state.admin_history.append({"Case": selected["Case ID"], "Verdict": "Closed as no remedy", "Operator": "Riya Kapoor", "Evidence": "No-remedy policy decision"})
+                st.success(f"Case {selected['Case ID']} closed as no remedy.")
+        else:
+            st.info("Agent-approved case: admin approval is not required.")
         with st.expander("Customer notification"):
             recipient = selected["Customer"].lower().replace(" ", ".") + "@example.test"
             st.caption("Simulated email channel")
@@ -223,9 +316,10 @@ def main() -> None:
             st.text_input("Subject", value=f"Payment exception update - {selected['Case ID']}", disabled=True, key=f"email_subject_{selected['Case ID']}")
             email_body = f"We reviewed your {selected['Rail']} payment of {selected['Amount']} to {selected['Merchant']}. Current outcome: {selected['State']}. No guaranteed recovery is implied."
             st.text_area("Message preview", value=email_body, height=90, disabled=True, key=f"email_body_{selected['Case ID']}")
-            if st.button("Trigger simulated email", key=f"email_trigger_{selected['Case ID']}", icon=":material/mail:", width="stretch"):
-                st.session_state.email_events.append({"Case": selected["Case ID"], "Recipient": recipient, "Subject": f"Payment exception update - {selected['Case ID']}"})
-                st.success(f"Email notification recorded for {recipient}. No external email was sent.")
+            if st.session_state.admin_decisions.get(selected["Case ID"]) == "Admin approved":
+                st.success(f"Customer email triggered for {recipient}. No external email was sent.")
+            else:
+                st.caption("Customer email is triggered automatically after admin approval of an escalated case.")
 
     st.markdown("## Operations analytics")
     chart_left, chart_right = st.columns(2)
