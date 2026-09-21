@@ -13,6 +13,17 @@ function Test-PortFree([int] $Port) {
     return -not (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
 }
 
+function Wait-ForPort([int] $Port, [int] $TimeoutSeconds = 30) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (-not (Test-PortFree $Port)) {
+            return $true
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    return $false
+}
+
 foreach ($Port in @(8501, 8502)) {
     if (-not (Test-PortFree $Port)) {
         Write-Warning "Port $Port is already in use. The existing service will be kept running."
@@ -31,6 +42,10 @@ if (Test-PortFree 8502) {
         "-NoExit", "-ExecutionPolicy", "Bypass", "-Command",
         "& '$Python' -m streamlit run '$Root\admin_dashboard.py' --server.port 8502"
     )
+}
+
+if (-not (Wait-ForPort 8501) -or -not (Wait-ForPort 8502)) {
+    throw "A Streamlit service did not start within 30 seconds. Check the server windows for the startup error."
 }
 
 Start-Process $CustomerUrl
