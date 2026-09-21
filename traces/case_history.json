@@ -2,98 +2,12 @@
   "histories": {
     "Maya Patel": [
       {
-        "case_id": "CASE-SYN-609581",
-        "case_status": "ESCALATED",
-        "claim_category": "AUTHORISED_BUT_SCAMMED",
-        "category": "AUTHORISED_BUT_SCAMMED",
-        "request_status": "NOT_AVAILABLE",
-        "reference_id": null,
-        "rail": "RTP",
-        "remedy_available": false,
-        "agent_approval_required": true,
-        "agent_approved": false,
-        "extracted_facts": {
-          "amount_min": "3000",
-          "amount_max": null,
-          "date_min": "2026-09-05",
-          "date_max": "2026-09-05",
-          "day_of_month": null,
-          "month_of_year": null,
-          "week_of_month": null,
-          "beneficiary_description": "Cedar Works",
-          "customer_reason": "authorised but scammed",
-          "rail": "RTP",
-          "customer_account": "ACCT-SYN-000001"
-        },
-        "ranked_candidates": {
-          "candidates": [
-            {
-              "payment": {
-                "payment_id": "PMT-SYN-004999",
-                "rail": "RTP",
-                "amount": "3200.00",
-                "currency": "GBP",
-                "value_date": "2026-09-05",
-                "settlement_timestamp": "2026-09-05T09:00:00",
-                "debtor_account": "ACCT-SYN-000001",
-                "creditor_account": "ACCT-SYN-005249",
-                "creditor_registered_name": "Cedar Works Inc",
-                "creditor_trading_name": "Cedar Works",
-                "status": "SETTLED",
-                "funds_moved": true
-              },
-              "confidence": 0.99,
-              "match_reasons": [
-                "amount",
-                "date",
-                "beneficiary name",
-                "customer account"
-              ]
-            }
-          ],
-          "abstained": false,
-          "abstention_reason": null
-        },
-        "selected_payment": {
-          "payment_id": "PMT-SYN-004999",
-          "rail": "RTP",
-          "amount": "3200.00",
-          "currency": "GBP",
-          "value_date": "2026-09-05",
-          "settlement_timestamp": "2026-09-05T09:00:00",
-          "debtor_account": "ACCT-SYN-000001",
-          "creditor_account": "ACCT-SYN-005249",
-          "creditor_registered_name": "Cedar Works Inc",
-          "creditor_trading_name": "Cedar Works",
-          "status": "SETTLED",
-          "funds_moved": true
-        },
-        "remedy": {
-          "category": "AUTHORISED_BUT_SCAMMED",
-          "action": "Escalate for manual review",
-          "rationale": "Authorised-scam claims require manual handling and do not promise recovery.",
-          "available": false,
-          "requires_human_review": true,
-          "message_type": "none",
-          "reason_code": "none",
-          "deadline_days": null,
-          "recovery_guaranteed": false
-        },
-        "deadline": null,
-        "confidence": 0.92,
-        "clarification_question": null,
-        "customer_message": "We recorded your authorised_but_scammed claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
-        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category AUTHORISED_BUT_SCAMMED. This request does not guarantee recovery.",
-        "redacted": true,
-        "agent_confirmed": false
-      },
-      {
-        "case_id": "CASE-SYN-033647",
-        "case_status": "ESCALATED",
+        "case_id": "CASE-SYN-813678",
+        "case_status": "CLOSED",
         "claim_category": "UNAUTHORISED",
         "category": "UNAUTHORISED",
         "request_status": "NOT_AVAILABLE",
-        "reference_id": null,
+        "reference_id": "SIM-ACH-813678",
         "rail": "ACH",
         "remedy_available": false,
         "agent_approval_required": true,
@@ -108,7 +22,7 @@
           "week_of_month": null,
           "beneficiary_description": "Northwind",
           "customer_reason": "unauthorised",
-          "rail": null,
+          "rail": "ACH",
           "customer_account": "ACCT-SYN-000001"
         },
         "ranked_candidates": {
@@ -171,7 +85,10 @@
         "customer_message": "We recorded your unauthorised claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
         "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category UNAUTHORISED. This request does not guarantee recovery.",
         "redacted": true,
-        "agent_confirmed": false
+        "agent_confirmed": false,
+        "raised_at": "2026-09-21T19:05:04.869349",
+        "approved_at": "2026-09-21T19:12:17.780525",
+        "last_updated_at": "2026-09-21T19:12:17.780525"
       }
     ],
     "Jordan Lee": [
@@ -259,7 +176,10 @@
         "customer_message": "We recorded your authorised_but_scammed claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
         "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category AUTHORISED_BUT_SCAMMED. This request does not guarantee recovery.",
         "redacted": true,
-        "agent_confirmed": false
+        "agent_confirmed": false,
+        "raised_at": "2026-09-21T18:53:24.235021",
+        "approved_at": null,
+        "last_updated_at": "2026-09-21T18:53:24.235024"
       },
       {
         "case_id": "CASE-SYN-934752",
@@ -345,7 +265,10 @@
         "customer_message": "We recorded your erroneous claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
         "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category ERRONEOUS. This request does not guarantee recovery.",
         "redacted": true,
-        "agent_confirmed": false
+        "agent_confirmed": false,
+        "raised_at": "2026-09-21T18:53:24.235064",
+        "approved_at": null,
+        "last_updated_at": "2026-09-21T18:53:24.235066"
       }
     ],
     "Sam Rivera": [
@@ -433,7 +356,10 @@
         "customer_message": "We recorded your erroneous claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
         "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category ERRONEOUS. This request does not guarantee recovery.",
         "redacted": true,
-        "agent_confirmed": false
+        "agent_confirmed": false,
+        "raised_at": "2026-09-21T18:53:24.235096",
+        "approved_at": null,
+        "last_updated_at": "2026-09-21T18:53:24.235097"
       }
     ],
     "Alex Morgan": [],
@@ -441,58 +367,6 @@
     "Taylor Kim": []
   },
   "chat_threads": {
-    "CASE-SYN-609581": [
-      {
-        "role": "customer",
-        "text": "The RTP payment on 2026-09-05 to Cedar was a scam"
-      },
-      {
-        "role": "agent",
-        "text": "Please provide the payment amount so I can confirm the payment before classifying the claim."
-      },
-      {
-        "role": "customer",
-        "text": "above 3000"
-      },
-      {
-        "role": "agent",
-        "text": "I found a GBP 3,200.00 payment on 2026-09-05 to Cedar Works. You mentioned an approximate amount. Please confirm this payment or choose another option before I classify the claim. Option 1: GBP 3,200.00 on 2026-09-05 to Cedar Works via RTP (PMT-SYN-004999)"
-      },
-      {
-        "role": "customer",
-        "text": "option 1"
-      },
-      {
-        "role": "agent",
-        "text": "We recorded your authorised-but-scammed claim for the RTP payment. This claim requires manual review. No recovery is promised and no inter-bank request will be raised automatically."
-      }
-    ],
-    "CASE-SYN-033647": [
-      {
-        "role": "customer",
-        "text": "I did not make the payment of GBP 1250 on 2026-01-02"
-      },
-      {
-        "role": "agent",
-        "text": "Please provide the beneficiary so I can confirm the payment before classifying the claim."
-      },
-      {
-        "role": "customer",
-        "text": "Northwind"
-      },
-      {
-        "role": "agent",
-        "text": "We matched the GBP 1,250.00 payment on 2026-01-02 to Northwind via ACH. The payment-exception deadline passed on 2026-03-03; I am routing this for manual review. No late request will be raised and no customer confirmation is required."
-      },
-      {
-        "role": "customer",
-        "text": "I did not make the ACH payment of GBP 1250 on 2026-01-02 to Northwind"
-      },
-      {
-        "role": "agent",
-        "text": "This payment already has an active case. I kept the existing case and did not create another request."
-      }
-    ],
     "CASE-SYN-559108": [
       {
         "role": "customer",
@@ -529,6 +403,12 @@
       {
         "role": "agent",
         "text": "We matched the GBP 900.00 payment on 2026-01-02 to Blue Oak via WIRE. The payment-exception deadline passed on 2026-01-03; I am routing this for manual review. No late request will be raised and no customer confirmation is required."
+      }
+    ],
+    "CASE-SYN-813678": [
+      {
+        "role": "customer",
+        "text": "I did not make the ACH payment of GBP 1250 on 2026-01-02  to Northwind"
       }
     ]
   },

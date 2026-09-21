@@ -13,6 +13,7 @@ import streamlit as st
 from core.models import CaseResult, CaseStatus, Category, RequestStatus
 from core.workflow import process_claim
 from data.create_database import create_database
+from theme import inject_css as inject_theme_css, note, page_header, payment_rail, setup_page
 
 HISTORY_PATH = Path(__file__).resolve().parent / "traces" / "case_history.json"
 DATABASE_PATH = Path(__file__).resolve().parent / "data" / "payment_exceptions.duckdb"
@@ -49,6 +50,13 @@ REASON_CODES = {
 
 def safe_text(value: object) -> str:
     return html.escape(str(value))
+
+
+def masked_identifier(value: str) -> str:
+    if len(value) <= 4:
+        return "****"
+    prefix = value.rsplit("-", 1)[0] if "-" in value else value[:2]
+    return f"{prefix}-******"
 
 
 def payment_data_csv() -> str:
@@ -141,6 +149,29 @@ def save_saved_state() -> None:
     HISTORY_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+def sync_persisted_case_updates(history: list[CaseResult]) -> None:
+    try:
+        saved = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    persisted = {
+        raw.get("case_id"): raw
+        for items in saved.get("histories", {}).values()
+        for raw in items
+        if raw.get("case_id")
+    }
+    for index, item in enumerate(history):
+        raw = persisted.get(item.case_id)
+        if not raw:
+            continue
+        updated = CaseResult.model_validate(raw)
+        item.reference_id = updated.reference_id
+        item.approved_at = updated.approved_at
+        item.last_updated_at = updated.last_updated_at
+        item.request_status = updated.request_status
+        item.case_status = updated.case_status
+
+
 def clear_user_history(user_name: str) -> None:
     case_ids = {item.case_id for item in st.session_state.histories[user_name]}
     st.session_state.histories[user_name] = []
@@ -220,7 +251,7 @@ def clarification_response(result: CaseResult) -> str:
         for index, candidate in enumerate(candidates[:5], 1):
             payment = candidate.payment
             choices.append(
-                f"Option {index}: {payment.currency} {payment.amount:,.2f} on {payment.value_date} to {payment.creditor_trading_name} via {payment.rail} ({payment.payment_id})"
+                f"Option {index}: {payment.currency} {payment.amount:,.2f} on {payment.value_date} to {payment.creditor_trading_name} via {payment.rail} ({masked_identifier(payment.payment_id)})"
             )
         response += " " + " ".join(choices)
     return response
@@ -300,7 +331,7 @@ def render_candidate(result: CaseResult) -> None:
             for candidate in candidates[:5]:
                 payment = candidate.payment
                 st.markdown(
-                    f'<div class="candidate-choice"><strong>{safe_text(payment.payment_id)}</strong> · {safe_text(payment.rail)} · {safe_text(payment.currency)} {payment.amount:,.2f}<br><span class="muted">{safe_text(payment.value_date)} · {safe_text(payment.creditor_trading_name)} · {candidate.confidence:.0%} match</span></div>',
+                    f'<div class="candidate-choice"><strong>{safe_text(masked_identifier(payment.payment_id))}</strong> · {safe_text(payment.rail)} · {safe_text(payment.currency)} {payment.amount:,.2f}<br><span class="muted">{safe_text(payment.value_date)} · {safe_text(payment.creditor_trading_name)} · {candidate.confidence:.0%} match</span></div>',
                     unsafe_allow_html=True,
                 )
         return
@@ -313,7 +344,7 @@ def render_candidate(result: CaseResult) -> None:
     selected_match = next((item for item in candidates if item.payment.payment_id == payment.payment_id), candidates[0])
     st.markdown("**Selected candidate**")
     st.markdown(
-        f'<div class="candidate-card"><div class="candidate-top"><strong>{safe_text(payment.payment_id)}</strong>{status_badge("Selected", "teal")}</div><div class="candidate-grid"><span><b>Rail</b><br>{safe_text(payment.rail)}</span><span><b>Amount</b><br>{safe_text(payment.currency)} {payment.amount:,.2f}</span><span><b>Payment date</b><br>{safe_text(payment.value_date)}</span><span><b>Beneficiary</b><br>{safe_text(payment.creditor_trading_name)}</span></div><div class="evidence"><b>Match confidence {selected_match.confidence:.0%}</b><br>{safe_text(", ".join(selected_match.match_reasons) or "Payment facts supplied for review")}</div></div>',
+        f'<div class="candidate-card"><div class="candidate-top"><strong>{safe_text(masked_identifier(payment.payment_id))}</strong>{status_badge("Selected", "teal")}</div><div class="candidate-grid"><span><b>Rail</b><br>{safe_text(payment.rail)}</span><span><b>Amount</b><br>{safe_text(payment.currency)} {payment.amount:,.2f}</span><span><b>Payment date</b><br>{safe_text(payment.value_date)}</span><span><b>Beneficiary</b><br>{safe_text(payment.creditor_trading_name)}</span></div><div class="evidence"><b>Match score {selected_match.confidence:.0%}</b><br>{safe_text(", ".join(selected_match.match_reasons) or "Payment facts supplied for review")}</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -354,7 +385,7 @@ def render_result(result: CaseResult, history: list[CaseResult], active_user: st
 
     st.markdown('<div class="review-title"><span>03</span><div><strong>Claim classification</strong><small>Deterministic decision after payment selection</small></div></div>', unsafe_allow_html=True)
     if result.claim_category:
-        st.markdown(f'<div class="decision-card"><div>{status_badge(CATEGORY_LABELS[result.claim_category], "teal" if result.claim_category != Category.NO_REMEDY else "red")}</div><h3>{result.claim_category.value}</h3><p class="muted">Confidence {result.confidence:.0%}</p><p>{safe_text(result.remedy.rationale if result.remedy else "Deterministic synthetic classification result.")}</p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="decision-card"><div>{status_badge(CATEGORY_LABELS[result.claim_category], "teal" if result.claim_category != Category.NO_REMEDY else "red")}</div><h3>{result.claim_category.value}</h3><p class="muted">Classification confidence {result.confidence:.0%}</p><p>{safe_text(result.remedy.rationale if result.remedy else "Deterministic synthetic classification result.")}</p></div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="empty-card">Classification waits until a payment is selected.</div>', unsafe_allow_html=True)
 
@@ -372,7 +403,7 @@ def render_result(result: CaseResult, history: list[CaseResult], active_user: st
     else:
         st.markdown('<div class="waiting-card"><strong>Remedy and deadline</strong><span>Shown after the customer confirms the payment in chat.</span></div>', unsafe_allow_html=True)
 
-st.set_page_config(page_title="Clearline | Payment Exceptions", page_icon="C", layout="wide", initial_sidebar_state="collapsed")
+setup_page("Clearline | Payment Exceptions", "C")
 ensure_demo_database()
 st.markdown(
     """
@@ -490,6 +521,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+inject_theme_css()
 
 if "active_user" not in st.session_state:
     st.session_state.active_user = "Maya Patel"
@@ -532,6 +564,7 @@ with nav_clear:
 profile = USERS[active_user]
 
 history = st.session_state.histories[active_user]
+sync_persisted_case_updates(history)
 if history:
     for index, item in enumerate(history):
         history[index] = refresh_clarification(item)
@@ -551,7 +584,13 @@ if current and current.clarification_question:
             message["text"] = clarification_response(current)
 status, status_tone = result_status(current)
 
-st.markdown(f'<div class="hero"><div class="kicker">{"Active case" if current else "No active case"}</div><h1>Raise Payment Exception</h1><div class="hero-sub">Keep the customer informed while the payment is checked.</div></div>', unsafe_allow_html=True)
+page_header("Raise payment exception", "Keep the customer informed while the payment is checked.")
+payment_rail([
+    {"label": "Received", "time": format_case_date(current.raised_at) if current else "Awaiting message", "state": "done" if current else "current"},
+    {"label": "Matched", "time": "Payment identified" if current and current.selected_payment else "Pending", "state": "done" if current and current.selected_payment else "current"},
+    {"label": "Reviewed", "time": "Policy decision" if current else "Pending", "state": "done" if current and current.case_status not in {CaseStatus.RECEIVED, CaseStatus.CLARIFICATION_REQUIRED} else "pending"},
+    {"label": "Outcome", "time": current.case_status.value.replace("_", " ").title() if current else "Pending", "state": "current" if current else "pending"},
+])
 
 head_a, head_b, head_c = st.columns([1.8, 1, 1], gap="large")
 with head_a:
@@ -565,7 +604,6 @@ with head_c:
     st.markdown(f'<div class="case-ref"><span>Claim category</span><strong>{safe_text(claim_label)}</strong></div>', unsafe_allow_html=True)
 
 st.markdown(f'<div class="status-strip"><span><b>Case status</b> {status_badge(case_label, status_tone)}</span><span><b>Claim category</b> {safe_text(claim_label)}</span><span><b>Request status</b> {safe_text(request_label)}</span></div>', unsafe_allow_html=True)
-st.download_button("Download current 6,000 payments", data=payment_data_csv(), file_name="payment_exceptions_current_6000.csv", mime="text/csv", width="stretch")
 
 if current and current.clarification_question:
     st.markdown(f'<div class="alert-clarification"><strong>Clarification needed from customer</strong><br><span class="muted">More information is required before the payment can be confirmed.</span></div>', unsafe_allow_html=True)
@@ -597,7 +635,7 @@ with left:
         if scenario_selected:
             st.markdown(f'<div class="output-card"><div class="output-label">Voice transcription preview</div>{safe_text(VOICE_DEMO_SCENARIOS[voice_scenario])}</div>', unsafe_allow_html=True)
         else:
-            st.info("Choose a scenario to preview the deterministic transcript before processing the recording.")
+            note("Voice scenario", "Choose a scenario to preview the deterministic transcript before processing the recording.", "info")
         if st.button("Transcribe & process voice", key=f"transcribe_voice_{active_user}", type="primary", disabled=not scenario_selected, width="stretch"):
             voice_text = VOICE_DEMO_SCENARIOS[voice_scenario]
             st.session_state.voice_transcripts[active_user] = voice_text
@@ -629,7 +667,7 @@ with left:
     if st.button("Process claim", type="primary", disabled=process_disabled, width="stretch"):
         text = claim.strip() or transcript.strip()
         if not text:
-            st.warning("Enter a customer message or confirmed transcript first.")
+            note("Customer message needed", "Enter a customer message or confirm the transcript before processing.", "hold")
         else:
             try:
                 st.session_state.drafts[active_user] = text
@@ -645,7 +683,7 @@ with left:
                 st.session_state.transcript_confirmed[active_user] = False
                 st.rerun()
             except Exception:
-                st.error("The claim could not be processed. Check the intake text and try again.")
+                note("Claim not processed", "Check the intake text and try again.", "hold")
     st.markdown("### Conversation")
     if claim.strip() or current:
         if current:
@@ -765,10 +803,10 @@ with left:
                                         save_saved_state()
                                         st.rerun()
                                     else:
-                                        st.warning("Please ask the customer to reply with a clear confirmation, such as: Yes, I confirm.")
+                                        note("Confirmation needed", "Ask the customer to reply with a clear confirmation, such as: Yes, I confirm.", "hold")
                         with note_col:
                             if st.button("Save draft", key=f"save_reply_{active_user}_{current.case_id}", width="stretch"):
-                                st.info("Customer reply draft saved in this demo session.")
+                                note("Draft saved", "Customer reply draft saved in this demo session.", "info")
 
                     if st.session_state.get(customer_confirmed_key, False):
                         pass
@@ -788,12 +826,13 @@ with left:
         else:
             st.markdown(f'<div class="wa-message customer"><span>Customer</span>{safe_text(claim.strip())}</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="empty-card">Start with the customer story. The copilot will keep the original message beside the structured case review.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="empty-card">Start with the customer story. The original message will appear beside the structured case review.</div>', unsafe_allow_html=True)
     st.markdown("### Case history")
     if history:
         for item in reversed(history[-5:]):
             item_status, _ = result_status(item)
-            label = item.claim_category.value if item.claim_category else "INTAKE"
+            label = CATEGORY_LABELS.get(item.claim_category, "INTAKE") if item.claim_category else "INTAKE"
+            request_status_label = item.request_status.value.replace("_", " ").title()
             if st.button(item.case_id, key=f"open_case_{active_user}_{item.case_id}", width="stretch"):
                 st.session_state.active_case_ids[active_user] = item.case_id
                 st.session_state.active_case_id = item.case_id
@@ -802,7 +841,7 @@ with left:
             st.markdown(
                 f'<div class="timeline-item">'
                 f'<div><strong>{safe_text(label)}</strong><small>{safe_text(item.case_id)}</small></div>'
-                f'<div><span>Latest status</span><strong>{safe_text(item_status)}</strong><small>{safe_text(item.request_status.value)}</small></div>'
+                f'<div><span>Latest status</span><strong>{safe_text(item_status.replace("_", " ").title())}</strong><small>{safe_text(request_status_label)}</small></div>'
                 f'<div><span>Raised</span><strong>{safe_text(format_case_date(item.raised_at))}</strong><small>Last updated {safe_text(format_case_date(item.last_updated_at))}</small></div>'
                 f'<div><span>Approved</span><strong>{safe_text(format_case_date(item.approved_at))}</strong><small>Reference {safe_text(reference)}</small></div>'
                 f'</div>',

@@ -92,13 +92,22 @@ If `npm` is not recognized after installing Node.js, close and reopen VS Code so
 
 ## 5. Run the applications
 
-For a live demo, the fastest option is to run the included launcher from the repository root:
+For a live demo, run the included setup-and-launch script from the repository root. It creates `.venv` when needed, installs `requirements.txt`, creates the synthetic DuckDB fixture, starts both Streamlit portals, waits for ports 8501 and 8502, and opens both URLs:
 
 ```powershell
-.\start_demo.ps1
+Set-Location Payment_Exceptions
+& powershell.exe -ExecutionPolicy Bypass -File .\start_demo.ps1
 ```
 
-It starts both Streamlit portals in separate PowerShell windows, opens the browser URLs, and preserves any service already using ports 8501 or 8502. Keep those two terminal windows open during the hackathon; closing them stops the local servers.
+After the first successful setup, use the faster repeat-launch command:
+
+```powershell
+& powershell.exe -ExecutionPolicy Bypass -File .\start_demo.ps1 -SkipInstall
+```
+
+The script preserves any service already using ports 8501 or 8502. Keep the two Streamlit windows open during the hackathon; closing them stops the local servers.
+
+If Python is missing, install Python 3.14 for Windows, reopen PowerShell, and run the setup command again. If the browser does not open automatically, use `http://localhost:8501` for the customer portal and `http://localhost:8502` for the operations console.
 
 Use separate terminals for each server.
 
@@ -429,3 +438,35 @@ If pytest reports failures in the older workflow tests after pulling this versio
 - The configured rail deadlines are 60 days for ACH unauthorised, 5 days for ACH erroneous, and 1 day for WIRE/RTP/FEDNOW configured requests.
 
 These failures indicate stale expectations in the local test file when the failure text mentions the old values or old automatic-selection behavior. Do not weaken the policy implementation to satisfy those old assertions; update the test expectation to the current rulebook and rerun `pytest -q`.
+
+User Raises Exception
+2
+|
+3
+v
+4
+AI Categorization
+5
+|
+6
+v
+7
+Analyst Review
+8
+|
+9
++----+----+
+10
+| |
+11
+Resolved Need More Info
+12
+| |
+13
++----+----+
+14
+|
+15
+v
+16
+User Notification
