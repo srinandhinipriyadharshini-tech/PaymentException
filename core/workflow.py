@@ -16,7 +16,7 @@ def process_claim(claim_text: str, db_path=None, adapter=None, agent_confirmed: 
     if debtor_account:
         facts = facts.model_copy(update={"customer_account": debtor_account})
     missing_facts = []
-    if facts.amount_min is None or facts.amount_max is None:
+    if facts.amount_min is None and facts.amount_max is None:
         missing_facts.append("the payment amount")
     if not facts.beneficiary_description:
         missing_facts.append("the beneficiary")
@@ -66,7 +66,8 @@ def process_claim(claim_text: str, db_path=None, adapter=None, agent_confirmed: 
     specific_claim = bool(facts.amount_min and facts.amount_max and facts.date_min and facts.date_max and facts.beneficiary_description)
     if len(ranked.candidates) > 1 and ranked.candidates[0].confidence - ranked.candidates[1].confidence < AMBIGUITY_BAND and not specific_claim:
         return CaseResult(case_id=case_id, case_status=CaseStatus.CLARIFICATION_REQUIRED, extracted_facts=facts, ranked_candidates=ranked, confidence=ranked.candidates[0].confidence, clarification_question="Which of the similarly matched payments do you mean?")
-    if facts.amount_min is not None and facts.amount_max is not None and facts.amount_min != facts.amount_max and not selected_by_id:
+    amount_is_non_exact = facts.amount_min != facts.amount_max
+    if (facts.amount_min is not None or facts.amount_max is not None) and amount_is_non_exact and not selected_by_id:
         candidate = ranked.candidates[0].payment
         return CaseResult(
             case_id=case_id,

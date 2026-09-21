@@ -127,6 +127,9 @@ class CaseResult(BaseModel):
     interbank_request: str = ""
     redacted: bool = True
     agent_confirmed: bool = False
+    raised_at: datetime = Field(default_factory=datetime.now)
+    approved_at: Optional[datetime] = None
+    last_updated_at: datetime = Field(default_factory=datetime.now)
 
     @property
     def submission_allowed(self) -> bool:

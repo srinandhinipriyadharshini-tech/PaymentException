@@ -39,6 +39,8 @@ def load_customer_cases() -> list[dict]:
             request_status = raw.get("request_status", "NOT_CREATED")
             remedy = raw.get("remedy") or {}
             remedy_available = remedy.get("available", raw.get("remedy_available", False))
+            message_type = remedy.get("message_type", "none")
+            request_type = "Recall request" if "recall" in message_type.lower() else "Return request" if "return" in message_type.lower() else "No request"
             if case_status == "CLARIFICATION_REQUIRED":
                 state = "Needs Clarification"
             elif case_status == "ESCALATED":
@@ -46,7 +48,7 @@ def load_customer_cases() -> list[dict]:
             elif case_status in {"NO_REMEDY", "CLOSED"} or not remedy_available:
                 state = "No-Remedy"
             elif case_status == "SUBMITTED_SIMULATED":
-                state = "Simulated Request Raised"
+                state = "Request Raised"
             elif request_status == "AGENT_APPROVED":
                 state = "Agent Approved"
             else:
@@ -65,16 +67,16 @@ def load_customer_cases() -> list[dict]:
                 "Request": raw.get("reference_id") or "N/A",
                 "State": state,
                 "SLA": "No remedy" if state == "No-Remedy" else f"{max((date.fromisoformat(deadline) - date.today()).days, 0)}d remaining" if deadline else "Awaiting match" if state == "Needs Clarification" else "No deadline",
+                "Request Type": request_type,
             })
     return cases
-
 
 def state_for(case: dict, age: int) -> str:
     if case["Rail"] in {"RTP", "FEDNOW"} or age > 60:
         return "No-Remedy"
     if age >= 46:
         return "Escalated"
-    return "Simulated Request Raised"
+    return "Request Raised"
 
 
 def sla_for(case: dict, age: int) -> str:
@@ -86,7 +88,7 @@ def sla_for(case: dict, age: int) -> str:
 
 
 def badge(value: str) -> str:
-    class_name = {"Simulated Request Raised": "good", "Escalated": "warn", "No-Remedy": "bad"}.get(value, "neutral")
+    class_name = {"Simulated Request Raised": "good", "Request Raised": "good", "Return Request Raised": "good", "Recall Request Raised": "good", "Escalated": "warn", "No-Remedy": "bad"}.get(value, "neutral")
     return f'<span class="badge {class_name}">{value}</span>'
 
 
@@ -96,6 +98,16 @@ def can_admin_approve(state: str) -> bool:
 
 def can_admin_close(state: str) -> bool:
     return state == "No-Remedy"
+
+
+def analytics_frames(cases: list[dict]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    category_labels = ["UNAUTHORISED", "ERRONEOUS", "AUTHORISED_BUT_SCAMMED", "NO_REMEDY"]
+    state_labels = ["Needs Clarification", "Escalated", "Ready For Review", "Request Raised", "Return Request Raised", "Recall Request Raised", "Simulated Request Raised", "Manual Review Approved", "No-Remedy"]
+    category_counts = pd.Series([str(item.get("Intent", "NO_REMEDY")) for item in cases]).value_counts() if cases else pd.Series(dtype="int64")
+    state_counts = pd.Series([item.get("State", "Needs Clarification") for item in cases]).value_counts() if cases else pd.Series(dtype="int64")
+    classification = pd.DataFrame({"Cases": [int(category_counts.get(label, 0)) for label in category_labels]}, index=category_labels)
+    states = pd.DataFrame({"Cases": [int(state_counts.get(label, 0)) for label in state_labels]}, index=state_labels)
+    return classification, states
 
 
 def metric(label: str, value: str, detail: str, tone: str) -> None:
@@ -186,15 +198,15 @@ def render_secondary_view(view: str) -> None:
         return
 
     if view == "Risk analytics":
+        classification, states = analytics_frames(st.session_state.get("admin_cases", []))
         left, right = st.columns(2)
         with left:
-            st.markdown("### Classification overrides")
-            st.bar_chart(pd.DataFrame({"AI initial": [42, 31, 23, 18], "Human adjustment": [8, 5, 7, 3]}, index=["Unauthorised", "Erroneous", "Scam", "No remedy"]), color=["#008f86", "#7564d8"])
+            st.markdown("### Case categories")
+            st.bar_chart(classification, color=["#008f86"])
         with right:
-            st.markdown("### Triage volatility")
-            st.line_chart(pd.DataFrame({"Auto-resolved": [14, 19, 17, 26, 23, 31], "Escalated": [4, 7, 9, 6, 11, 8], "No-remedy": [2, 3, 5, 4, 8, 6]}, index=["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"]), color=["#008f86", "#d77a16", "#d84f5b"])
-        st.markdown("### Signal interpretation")
-        st.success("Human override rate is 16.8%. The largest adjustment cluster is authorised-scam versus erroneous intent, so those cases remain prioritized for audit context.")
+            st.markdown("### Current case states")
+            st.bar_chart(states, color=["#d77a16"])
+        st.info(f"Analytics reflect {len(st.session_state.get('admin_cases', []))} customer cases currently loaded in this admin session.")
         return
 
     st.markdown("### Recent audit decisions")
@@ -261,11 +273,11 @@ def main() -> None:
         row["Decision"] = st.session_state.admin_decisions.get(item["Case ID"], "Pending admin action" if row["State"] == "Escalated" else "Not required")
         enriched.append(row)
     escalated = sum(item["State"] == "Escalated" for item in enriched)
-    active = sum(item["State"] == "Simulated Request Raised" for item in enriched)
+    active = sum(item["State"] in {"Request Raised", "Return Request Raised", "Recall Request Raised", "Simulated Request Raised"} for item in enriched)
     blocked = sum(item["State"] == "No-Remedy" for item in enriched)
     metrics = st.columns(4)
     with metrics[0]: metric("Escalated cases", str(escalated), "Awaiting admin decision", "amber")
-    with metrics[1]: metric("Active simulated requests", str(active), "From customer workspace", "cyan")
+    with metrics[1]: metric("Active requests", str(active), "Return or recall requests", "cyan")
     with metrics[2]: metric("No-remedy decisions", str(blocked), "Rail finality or expired SLA", "red")
     with metrics[3]: metric("Voice agent activity", "03", "+12% live · active calls", "cyan")
 
@@ -273,9 +285,9 @@ def main() -> None:
     filters = st.columns([2, 1, 1])
     with filters[0]: query = st.text_input("Search case, customer or beneficiary", placeholder="Search the queue", label_visibility="collapsed")
     with filters[1]: rail = st.selectbox("Rail", ["All rails", "ACH", "WIRE", "RTP", "FEDNOW"], label_visibility="collapsed")
-    with filters[2]: status = st.selectbox("State", ["All states", "Needs Clarification", "Escalated", "Ready For Review", "Agent Approved", "Simulated Request Raised", "No-Remedy"], label_visibility="collapsed")
+    with filters[2]: status = st.selectbox("State", ["All states", "Needs Clarification", "Escalated", "Ready For Review", "Agent Approved", "Request Raised", "Return Request Raised", "Recall Request Raised", "Simulated Request Raised", "No-Remedy"], label_visibility="collapsed")
     visible = [item for item in enriched if (not query or query.lower() in str(item).lower()) and (rail == "All rails" or item["Rail"] == rail) and (status == "All states" or item["State"] == status)]
-    table = pd.DataFrame([{key: item[key] for key in ["Case ID", "Customer", "Amount", "Rail", "Intent", "State", "Decision", "SLA"]} for item in visible])
+    table = pd.DataFrame([{key: item[key] for key in ["Case ID", "Customer", "Amount", "Rail", "Intent", "Request Type", "State", "Decision", "SLA"]} for item in visible])
     st.dataframe(table, use_container_width=True, hide_index=True, column_config={"State": st.column_config.TextColumn("State"), "Confidence": st.column_config.ProgressColumn("Match", min_value=0, max_value=100)})
 
     if not visible:
@@ -289,17 +301,26 @@ def main() -> None:
         st.markdown(f'<div class="audit-block"><div class="eyebrow">Selected case</div><h4>{selected["Case ID"]} · {selected["Customer"]}</h4><p><strong>{selected["Amount"]}</strong> to {selected["Merchant"]} via {selected["Rail"]}<br>{selected["Date"]} · {badge(selected["State"])} · {selected["SLA"]}</p></div>', unsafe_allow_html=True)
         st.markdown(f'<div class="audit-block"><h4>AI cognitive routing & vector match</h4><p>Cosine similarity match confidence: <strong>{selected["Confidence"]}%</strong></p><div class="terminal"><b>route</b> payment intelligence / claimant history / rail rules<br><b>match</b> User stated beneficiary and amount. Found closest match <strong>{selected["Merchant"]}</strong>. Date tolerance window accepted. Cross-referencing trading names...<br><b>guard</b> 60-day policy gate: <strong>{"BLOCKED" if selected["State"] == "No-Remedy" else "REVIEW" if selected["State"] == "Escalated" else "PASS"}</strong></div></div>', unsafe_allow_html=True)
     with right:
-        recommendation = "Preserve evidence and route to policy exception review. Do not raise a recovery request." if selected["State"] == "No-Remedy" else "Hold for senior analyst review before the SLA window closes." if selected["State"] == "Escalated" else "Safe to approve simulated interbank recovery request."
+        recommendation = "Preserve evidence and route to policy exception review. Do not raise a recovery request." if selected["State"] == "No-Remedy" else "Hold for senior analyst review before the SLA window closes." if selected["State"] == "Escalated" else f"Safe to approve the configured {selected['Request Type'].lower()}."
         st.markdown(f'<div class="audit-block"><h4>Agentic smart audit verdict</h4><p>Multi-agent pre-flight · 3 checks complete</p><div class="risk">{selected["Risk"]}% <span style="font-size:11px;color:#78909e;font-weight:400">fraud risk · {"LOW" if selected["Risk"] < 20 else "MODERATE"}</span></div><p><strong>Behavioral flag</strong><br>Customer profile is stable. No past buyer remorse claims detected in 12 months.</p><div class="recommendation"><strong>System recommendation</strong><p>{recommendation}</p></div></div>', unsafe_allow_html=True)
         decision = st.session_state.admin_decisions.get(selected["Case ID"])
-        if can_admin_approve(selected["State"]) and decision != "Admin approved":
-            if st.button("Approve simulated request", type="primary", use_container_width=True):
+        if can_admin_approve(selected["State"]) and decision not in {"Admin approved", "Manual review approved"}:
+            action_label = "Approve manual review" if selected["Request Type"] == "No request" else f"Approve {selected['Request Type'].lower()}"
+            if st.button(action_label, type="primary", use_container_width=True):
                 recipient = selected["Customer"].lower().replace(" ", ".") + "@example.test"
-                st.session_state.admin_decisions[selected["Case ID"]] = "Admin approved"
-                st.session_state.admin_history.append({"Case": selected["Case ID"], "Verdict": "Admin approved", "Operator": "Riya Kapoor", "Evidence": "Escalated case approved; customer email triggered"})
+                decision_label = "Manual review approved" if selected["Request Type"] == "No request" else "Admin approved"
+                state_label = "Manual Review Approved" if selected["Request Type"] == "No request" else "Recall Request Raised" if selected["Request Type"] == "Recall request" else "Return Request Raised"
+                st.session_state.admin_decisions[selected["Case ID"]] = decision_label
+                for case in st.session_state.admin_cases:
+                    if case["Case ID"] == selected["Case ID"]:
+                        case["State"] = state_label
+                        case["SLA"] = "Manual review approved" if selected["Request Type"] == "No request" else f"{selected['Request Type']} approved"
+                        break
+                st.session_state.admin_history.append({"Case": selected["Case ID"], "Verdict": decision_label, "Operator": "Riya Kapoor", "Evidence": "Escalated case reviewed; customer email triggered; no recovery request created" if selected["Request Type"] == "No request" else "Escalated case approved; customer email triggered"})
                 st.session_state.email_events.append({"Case": selected["Case ID"], "Recipient": recipient, "Subject": f"Payment exception update - {selected['Case ID']}"})
-                st.success(f"Simulated request {selected['Request']} approved and customer email triggered for {recipient}. No guaranteed recovery.")
-        elif decision == "Admin approved":
+                st.session_state.admin_cases = [dict(case) for case in st.session_state.admin_cases]
+                st.rerun()
+        elif decision in {"Admin approved", "Manual review approved"}:
             st.success("Admin approval recorded and customer email already triggered.")
         elif can_admin_close(selected["State"]):
             st.error("Request blocked by policy: no late request or final-rail recovery request will be raised automatically.")
@@ -322,13 +343,14 @@ def main() -> None:
                 st.caption("Customer email is triggered automatically after admin approval of an escalated case.")
 
     st.markdown("## Operations analytics")
+    classification, states = analytics_frames(enriched)
     chart_left, chart_right = st.columns(2)
     with chart_left:
-        st.markdown("### Classification overrides")
-        st.bar_chart(pd.DataFrame({"AI initial": [42, 31, 23, 18], "Human adjustment": [8, 5, 7, 3]}, index=["Unauthorised", "Erroneous", "Scam", "No remedy"]), color=["#58d4cd", "#9c8cf5"])
+        st.markdown("### Case categories")
+        st.bar_chart(classification, color=["#58d4cd"])
     with chart_right:
-        st.markdown("### Triage volatility")
-        st.line_chart(pd.DataFrame({"Auto-resolved": [14, 19, 17, 26, 23, 31], "Escalated": [4, 7, 9, 6, 11, 8], "No-remedy": [2, 3, 5, 4, 8, 6]}, index=["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"]), color=["#58d4cd", "#eab76a", "#ef747c"])
+        st.markdown("### Current case states")
+        st.bar_chart(states, color=["#eab76a"])
 
 
 if __name__ == "__main__":
