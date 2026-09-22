@@ -41,96 +41,101 @@ import {
 
 const baseCases = [
   {
-    id: 'EXC-24091',
+    id: 'CASE-SYN-813678',
     customer: 'Maya Patel',
     initials: 'MP',
     amount: 1250,
     currency: 'GBP',
     rail: 'ACH',
-    intent: 'Authorised scam',
-    age: 18,
-    confidence: 94,
+    intent: 'Unauthorised',
+    baseState: 'Closed',
+    age: 262,
+    confidence: 85,
     risk: 12,
-    merchant: 'Northwind Supplies Ltd',
+    merchant: 'Northwind',
     merchantShort: 'Northwind',
     paymentDate: '02 Jan 2026',
-    requestId: 'IR-ACH-8F41C2',
+    requestId: 'N/A',
     route: 'Payment intelligence / claimant history / rail rules',
     thought: "User stated 'Northwind' and '£1,250'. Found closest match 'Northwind Supplies Ltd'. Date tolerance accepted (+0 day deviation). Cross-referencing trading names...",
     behavior: 'Customer has historical high reliability. 0 past buyer\'s remorse claims in 12 months.',
   },
   {
-    id: 'EXC-24088',
+    id: 'CASE-SYN-559108',
     customer: 'Jordan Lee',
     initials: 'JL',
-    amount: 73000,
+    amount: 1250,
     currency: 'GBP',
-    rail: 'WIRE',
-    intent: 'Unauthorised',
-    age: 47,
-    confidence: 89,
+    rail: 'ACH',
+    intent: 'Authorised scam',
+    baseState: 'Escalated',
+    age: 262,
+    confidence: 85,
     risk: 28,
-    merchant: 'Northwind Supplies Ltd',
+    merchant: 'Northwind',
     merchantShort: 'Northwind',
-    paymentDate: '20 Jul 2026',
-    requestId: 'IR-WIR-2B01A9',
+    paymentDate: '02 Jan 2026',
+    requestId: 'N/A',
     route: 'Identity signal / velocity monitor / analyst queue',
     thought: "User stated 'I did not make' and '£73,000'. Found exact amount match. Account velocity is elevated; routing to senior analyst for confirmation...",
     behavior: 'Customer profile is stable. One device-change event detected before the claim.',
   },
   {
-    id: 'EXC-24083',
-    customer: 'Sam Rivera',
-    initials: 'SR',
-    amount: 3200,
+    id: 'CASE-SYN-934752',
+    customer: 'Jordan Lee',
+    initials: 'JL',
+    amount: 1450,
     currency: 'GBP',
-    rail: 'RTP',
-    intent: 'No remedy',
-    age: 68,
-    confidence: 97,
-    risk: 8,
-    merchant: 'Cedar Works Inc',
-    merchantShort: 'Cedar Works',
-    paymentDate: '05 Sep 2026',
+    rail: 'ACH',
+    intent: 'Erroneous',
+    baseState: 'Closed',
+    age: 262,
+    confidence: 85,
+    risk: 19,
+    merchant: 'Northwind',
+    merchantShort: 'Northwind',
+    paymentDate: '02 Jan 2026',
     requestId: 'N/A',
     route: 'Instant rail finality / no-recall policy',
     thought: "Payment is an RTP transaction. Rail finality policy supersedes claim narrative. Recovery request is blocked; preserve evidence for review...",
     behavior: 'Customer has no prior disputes. Finality is rail-driven, not a fraud-risk finding.',
   },
   {
-    id: 'EXC-24079',
-    customer: 'Alex Morgan',
-    initials: 'AM',
-    amount: 9000,
+    id: 'CASE-SYN-963010',
+    customer: 'Sam Rivera',
+    initials: 'SR',
+    amount: 900,
     currency: 'GBP',
-    rail: 'ACH',
+    rail: 'WIRE',
     intent: 'Erroneous',
-    age: 32,
-    confidence: 91,
+    baseState: 'Escalated',
+    age: 262,
+    confidence: 85,
     risk: 19,
-    merchant: 'Blue Oak Services Ltd',
+    merchant: 'Blue Oak',
     merchantShort: 'Blue Oak',
-    paymentDate: '25 Jul 2026',
-    requestId: 'IR-ACH-35D8AA',
+    paymentDate: '02 Jan 2026',
+    requestId: 'N/A',
     route: 'Claim semantics / beneficiary match / deadline guard',
     thought: "User stated 'wrong payment' and 'Blue Oak'. Match confidence is high. Return-of-funds remedy is available within the configured window...",
     behavior: 'Customer history is clean. Repeated beneficiary appears in normal account activity.',
   },
   {
-    id: 'EXC-24073',
-    customer: 'Taylor Kim',
-    initials: 'TK',
-    amount: 7950,
-    currency: 'USD',
-    rail: 'ACH',
-    intent: 'Erroneous',
-    age: 12,
-    confidence: 96,
+    id: 'CASE-SYN-879049',
+    customer: 'Priya Shah',
+    initials: 'PS',
+    amount: 75.25,
+    currency: 'GBP',
+    rail: 'FEDNOW',
+    intent: 'No remedy',
+    baseState: 'No-Remedy',
+    age: 31,
+    confidence: 85,
     risk: 9,
-    merchant: 'John Doe Plumbing LLC',
-    merchantShort: 'John Doe Plumbing',
-    paymentDate: '15 Sep 2026',
-    requestId: 'IR-ACH-91E2D0',
+    merchant: 'Lumen Health',
+    merchantShort: 'Lumen Health',
+    paymentDate: '21 Aug 2026',
+    requestId: 'N/A',
     route: 'Voice transcript / beneficiary vector / amount tolerance',
     thought: "User stated 'plumber' and '8,000'. Found closest match 'John Doe Plumbing LLC' for $7,950. Date tolerance accepted (+1 day deviation). Cross-referencing trading names...",
     behavior: 'Customer has a stable payment pattern. No prior dispute clustering detected.',
@@ -153,13 +158,15 @@ const volatilityData = [
   { time: '18:00', resolved: 31, escalated: 8, noRemedy: 6 },
 ]
 
-function getState(age, rail) {
+function getState(age, rail, baseState) {
+  if (baseState === 'Closed') return 'Closed'
   if (rail === 'RTP' || rail === 'FEDNOW' || age > 60) return 'No-Remedy'
-  if (age >= 46) return 'Escalated'
+  if (baseState === 'Escalated' || age >= 46) return 'Escalated'
   return 'Simulated Request Raised'
 }
 
-function getSla(age, rail) {
+function getSla(age, rail, baseState) {
+  if (baseState === 'Closed') return { label: 'Closed', tone: 'green', progress: 100 }
   if (rail === 'RTP' || rail === 'FEDNOW') return { label: 'Rail finality', tone: 'red', progress: 100 }
   if (age > 60) return { label: 'Window exceeded', tone: 'red', progress: 100 }
   if (age >= 46) return { label: `${60 - age}d remaining`, tone: 'amber', progress: (age / 60) * 100 }
@@ -171,6 +178,7 @@ function StatusPill({ state }) {
     'Simulated Request Raised': { icon: CheckCircle2, className: 'status-green' },
     Escalated: { icon: AlertTriangle, className: 'status-amber' },
     'No-Remedy': { icon: LockKeyhole, className: 'status-red' },
+    Closed: { icon: CheckCircle2, className: 'status-green' },
   }[state]
   const Icon = config.icon
   return <span className={`status-pill ${config.className}`}><Icon size={13} />{state}</span>
@@ -199,9 +207,9 @@ function VoiceAssistantPanel({ onTranscriptionComplete }) {
   }, [voiceState])
 
   const scenarios = {
-    A: { label: 'Within 60 days', transcript: 'I sent around eight thousand to the plumber last Tuesday.', delay: 1100, payload: { query: 'John Doe Plumbing', age: 12, caseId: 'EXC-24073' } },
-    B: { label: 'Over 60 days', transcript: 'I had a wrong charge of five hundred dollars back in June.', delay: 900, payload: { query: 'wrong charge', age: 68, caseId: 'EXC-24079' } },
-    C: { label: 'Escalation trigger', transcript: "No, that's not the right account, none of those are mine!", delay: 700, payload: { query: 'EXC-24088', age: 47, caseId: 'EXC-24088' } },
+    A: { label: 'Within 60 days', transcript: 'I sent around twelve hundred to Northwind in January.', delay: 1100, payload: { query: 'Northwind', age: 18, caseId: 'CASE-SYN-813678' } },
+    B: { label: 'Over 60 days', transcript: 'I had a wrong charge of nine hundred dollars back in January.', delay: 900, payload: { query: 'Blue Oak', age: 68, caseId: 'CASE-SYN-963010' } },
+    C: { label: 'Escalation trigger', transcript: "No, that's not the right account, none of those are mine!", delay: 700, payload: { query: 'CASE-SYN-559108', age: 47, caseId: 'CASE-SYN-559108' } },
   }
 
   const startVoiceCapture = () => {
@@ -240,12 +248,34 @@ function VoiceAssistantPanel({ onTranscriptionComplete }) {
 
 function App() {
   const [age, setAge] = useState(18)
-  const [selectedId, setSelectedId] = useState('EXC-24091')
+  const [selectedId, setSelectedId] = useState('CASE-SYN-813678')
+  const [liveCases, setLiveCases] = useState(null)
   const [query, setQuery] = useState('')
   const [railFilter, setRailFilter] = useState('All rails')
   const [auditOpen, setAuditOpen] = useState(false)
 
-  const cases = useMemo(() => baseCases.map((item) => ({ ...item, state: getState(age, item.rail), sla: getSla(age, item.rail) })), [age])
+  useEffect(() => {
+    let active = true
+    const loadCases = async () => {
+      try {
+        const response = await fetch('/api/cases', { cache: 'no-store' })
+        if (!response.ok) throw new Error('Case API unavailable')
+        const payload = await response.json()
+        if (active && Array.isArray(payload.cases)) setLiveCases(payload.cases)
+      } catch {
+        if (active) setLiveCases(null)
+      }
+    }
+    loadCases()
+    const timer = window.setInterval(loadCases, 5000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [])
+
+  const sourceCases = liveCases || baseCases
+  const cases = useMemo(() => sourceCases.map((item) => ({ ...item, state: getState(age, item.rail, item.baseState), sla: getSla(age, item.rail, item.baseState) })), [age, sourceCases])
   const filteredCases = useMemo(() => cases.filter((item) => {
     const matchesQuery = `${item.id} ${item.customer} ${item.merchantShort}`.toLowerCase().includes(query.toLowerCase())
     return matchesQuery && (railFilter === 'All rails' || item.rail === railFilter)
@@ -265,6 +295,10 @@ function App() {
     setQuery(payload.query)
     setSelectedId(payload.caseId)
   }
+
+  useEffect(() => {
+    if (cases.length && !cases.some((item) => item.id === selectedId)) setSelectedId(cases[0].id)
+  }, [cases, selectedId])
 
   return (
     <div className={`app-shell theme-${sandboxTone}`}>
@@ -304,10 +338,10 @@ function App() {
         <VoiceAssistantPanel onTranscriptionComplete={handleTranscriptionComplete} />
 
         <section className="metrics-grid">
-          <MetricCard label="Escalated cases" value={String(8 + escalatedCount)} detail="+3.2% vs previous shift" icon={AlertTriangle} accent="amber" />
-          <MetricCard label="Active simulated requests" value={String(17 + safeCount)} detail="92% within SLA window" icon={Zap} accent="green" />
-          <MetricCard label="No-remedy decisions" value={String(4 + noRemedyCount)} detail="Rail finality + expired SLA" icon={LockKeyhole} accent="red" />
-          <article className="metric-card voice-card"><div className="metric-heading"><span>Voice agent activity</span><span className="voice-wave"><i /><i /><i /><i /><i /></span></div><div className="voice-readout"><div className="voice-avatar"><Radio size={16} /></div><div><strong>03</strong><span>active calls</span></div><small>+12% live</small></div><div className="voice-bar"><span style={{ width: '68%' }} /></div></article>
+          <MetricCard label="Escalated cases" value={String(escalatedCount)} detail="Current analyst queue" icon={AlertTriangle} accent="amber" />
+          <MetricCard label="Active simulated requests" value={String(safeCount)} detail="Within current SLA window" icon={Zap} accent="green" />
+          <MetricCard label="No-remedy decisions" value={String(noRemedyCount)} detail="Rail finality or expired SLA" icon={LockKeyhole} accent="red" />
+          <article className="metric-card voice-card"><div className="metric-heading"><span>Voice Intake &amp; Priority</span><span className="voice-wave"><i /><i /><i /><i /><i /></span></div><div className="voice-readout"><div className="voice-avatar"><Radio size={16} /></div><div><strong>Ready</strong><span>stress signal</span></div><small>Priority routing</small></div><div className="voice-bar"><span style={{ width: '0%' }} /></div></article>
         </section>
 
         <section className="content-grid">
@@ -315,7 +349,7 @@ function App() {
             <div className="section-heading"><div><div className="eyebrow">Prioritised work queue</div><h2>Cases requiring orchestration</h2></div><button className="secondary-button"><Filter size={15} /> Filters <span>2</span></button></div>
             <div className="queue-toolbar"><div className="search-field"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search case, customer or beneficiary" /></div><div className="rail-tabs">{['All rails', 'ACH', 'WIRE', 'RTP'].map((rail) => <button key={rail} className={railFilter === rail ? 'selected' : ''} onClick={() => setRailFilter(rail)}>{rail}</button>)}</div></div>
             <div className="table-wrap"><table><thead><tr><th>Case / customer</th><th>Disputed amount</th><th>Rail</th><th>Classification</th><th>State</th><th>SLA clock</th><th /></tr></thead><tbody>{filteredCases.map((item) => <tr key={item.id} className={item.id === selectedId ? 'row-selected' : ''} onClick={() => setSelectedId(item.id)}><td><div className="case-cell"><div className="customer-avatar">{item.initials}</div><div><strong>{item.id}</strong><span>{item.customer}</span></div></div></td><td><strong>{item.currency} {item.amount.toLocaleString()}</strong><span className="muted-cell">{item.merchantShort}</span></td><td><span className="rail-chip"><span />{item.rail}</span></td><td><span className="classification">{item.intent}</span><span className="confidence"><span style={{ width: `${item.confidence}%` }} />{item.confidence}% match</span></td><td><StatusPill state={item.state} /></td><td><div className="sla-cell"><span className={`sla-dot dot-${item.sla.tone}`} />{item.sla.label}</div></td><td><button className="row-action" onClick={(event) => { event.stopPropagation(); setSelectedId(item.id); setAuditOpen(true) }}><ArrowUpRight size={15} /></button></td></tr>)}</tbody></table></div>
-            <div className="table-footer"><span>Showing {filteredCases.length} of 24 cases</span><span className="footer-page">1 <span>/</span> 6 <ChevronDown size={13} /></span></div>
+            <div className="table-footer"><span>Showing {filteredCases.length} of {cases.length} cases</span><span className="footer-page">1 <span>/</span> 1 <ChevronDown size={13} /></span></div>
 
             <div className="chart-grid"><article className="chart-card"><div className="chart-heading"><div><span className="eyebrow">Human oversight</span><h3>Classification overrides</h3></div><button className="more-button"><MoreHorizontal size={16} /></button></div><div className="legend"><span><i className="legend-swatch swatch-cyan" />AI initial</span><span><i className="legend-swatch swatch-lilac" />Human adjustment</span></div><div className="chart-height"><ResponsiveContainer width="100%" height="100%"><BarChart data={classificationData} barGap={7} margin={{ top: 8, right: 4, left: -23, bottom: 0 }}><CartesianGrid stroke="#223240" vertical={false} /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#748697', fontSize: 10 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: '#607283', fontSize: 10 }} /><Tooltip cursor={{ fill: '#162431' }} contentStyle={{ background: '#101c28', border: '1px solid #2b3d4e', borderRadius: 8, fontSize: 11 }} /><Bar dataKey="bot" fill="#58d4cd" radius={[3, 3, 0, 0]} /><Bar dataKey="human" fill="#9c8cf5" radius={[3, 3, 0, 0]} /></BarChart></ResponsiveContainer></div></article><article className="chart-card"><div className="chart-heading"><div><span className="eyebrow">Last 12 hours</span><h3>Triage volatility</h3></div><span className="chart-live"><span />Live</span></div><div className="legend"><span><i className="legend-line line-green" />Auto-resolved</span><span><i className="legend-line line-amber" />Escalated</span><span><i className="legend-line line-red" />No-remedy</span></div><div className="chart-height"><ResponsiveContainer width="100%" height="100%"><LineChart data={volatilityData} margin={{ top: 8, right: 4, left: -23, bottom: 0 }}><CartesianGrid stroke="#223240" vertical={false} /><XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fill: '#748697', fontSize: 10 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: '#607283', fontSize: 10 }} /><Tooltip contentStyle={{ background: '#101c28', border: '1px solid #2b3d4e', borderRadius: 8, fontSize: 11 }} /><Line type="monotone" dataKey="resolved" stroke="#58d4cd" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="escalated" stroke="#eab76a" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="noRemedy" stroke="#ef747c" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer></div></article></div>
           </div>

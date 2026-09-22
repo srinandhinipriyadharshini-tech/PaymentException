@@ -21,6 +21,8 @@ def calculate_remedy(category: Category, payment: Payment) -> Remedy:
     rule = RULES.get((payment.rail, category))
     if category is Category.AUTHORISED_BUT_SCAMMED:
         return Remedy(category=category, action="Escalate for manual review", rationale="Authorised-scam claims require manual handling and do not promise recovery.", available=False, requires_human_review=True)
+    if payment.status not in {"SETTLED", "PENDING"}:
+        return Remedy(category=category, action="No permitted remedy exists", rationale=f"The payment status is {payment.status.lower()}, so there are no funds in an eligible recovery state.", available=False)
     if category is Category.NO_REMEDY or rule is None:
         return Remedy(category=category, action="No permitted remedy exists", rationale="No rail/category rule permits a recovery request.", available=False)
     available, message_type, reason_code, deadline_days = rule

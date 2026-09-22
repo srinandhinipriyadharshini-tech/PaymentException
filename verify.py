@@ -10,6 +10,7 @@ REQUIRED = (
     "app_platform/ai_contract.py",
     "app_platform/guardrails.py",
     "app_platform/tracer.py",
+    "api.py",
     "run.py",
     "Makefile",
 )

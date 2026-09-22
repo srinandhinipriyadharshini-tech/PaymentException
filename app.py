@@ -6,6 +6,7 @@ import html
 import io
 import json
 from pathlib import Path
+import time
 
 import duckdb
 import streamlit as st
@@ -71,20 +72,40 @@ def payment_data_csv() -> str:
 
 
 def ensure_demo_database() -> None:
+    if not DATABASE_PATH.exists():
+        create_database(DATABASE_PATH)
+        return
+
     connection = None
     try:
-        connection = duckdb.connect(str(DATABASE_PATH), read_only=True)
+        last_error = None
+        for attempt in range(10):
+            try:
+                connection = duckdb.connect(str(DATABASE_PATH), read_only=True)
+                break
+            except Exception as exc:
+                last_error = exc
+                if attempt == 9:
+                    raise last_error
+                time.sleep(0.25)
         count = connection.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
         fixture = connection.execute("SELECT value_date FROM payments WHERE payment_id = 'PMT-SYN-000006'").fetchone()
         cedar_fixture = connection.execute("SELECT amount, value_date, creditor_trading_name FROM payments WHERE payment_id = 'PMT-SYN-003777'").fetchone()
         if count == 6000 and fixture and str(fixture[0]) == "2026-09-09" and cedar_fixture and str(cedar_fixture[0]) == "152788.25" and str(cedar_fixture[1]) == "2026-09-24" and cedar_fixture[2] == "Cedar Works":
             return
-    except Exception:
-        pass
+    except Exception as exc:
+        raise RuntimeError(
+            "The payment database exists but could not be opened. "
+            "Close any other database or demo process using data/payment_exceptions.duckdb, then restart the app."
+        ) from exc
     finally:
         if connection is not None:
             connection.close()
-    create_database(DATABASE_PATH)
+
+    raise RuntimeError(
+        "The payment database exists but does not match the expected demo fixture. "
+        "Recreate it explicitly with: python data/create_database.py"
+    )
 
 
 def refresh_clarification(result: CaseResult) -> CaseResult:
@@ -125,7 +146,7 @@ def load_saved_state() -> tuple[dict[str, list[CaseResult]], dict[str, list[dict
             if not items or not drafts[name]:
                 continue
             latest = items[-1]
-            if latest.clarification_question and latest.extracted_facts.amount_min is None and any(marker in drafts[name].lower() for marker in ("about ", "around ", "approximately ", "approx ")):
+            if latest.clarification_question:
                 refreshed = process_claim(drafts[name], DATABASE_PATH, debtor_account=USERS[name]["account"])
                 refreshed.case_id = latest.case_id
                 preserve_case_dates(refreshed, latest)
@@ -222,6 +243,17 @@ def register_customer_case(history: list[CaseResult], claim_text: str, result: C
 
 def sync_active_user() -> None:
     st.session_state.active_user = st.session_state.user_selector
+
+
+def role_url(role: str) -> str:
+    return "http://localhost:8502" if role == "Payment Exception Analyst" else "http://localhost:8501"
+
+
+def render_role_selector() -> None:
+    st.markdown(
+        '<details class="role-menu"><summary>User</summary><a href="http://localhost:8501">User</a><a href="http://localhost:8502">Payment Exception Analyst</a></details>',
+        unsafe_allow_html=True,
+    )
 
 
 def mark_reply_submitted(input_key: str, flag_key: str) -> None:
@@ -351,15 +383,19 @@ def render_candidate(result: CaseResult) -> None:
 
 def render_result(result: CaseResult, history: list[CaseResult], active_user: str) -> None:
     status, tone = result_status(result)
+    st.markdown(
+        '<div class="ai-signal-card"><div class="ai-brain">🧠</div><div><span class="ai-signal-label">AI result synthesis</span><strong>Facts, payment match, and policy outcome are ready for review.</strong></div><span class="ai-signal-state">VERIFIED</span></div>',
+        unsafe_allow_html=True,
+    )
     st.markdown('<div class="section-kicker">Active case</div>', unsafe_allow_html=True)
     header_left, header_right = st.columns([1.7, 1], gap="large")
     with header_left:
         st.markdown(f"## {safe_text(result.case_id)}")
         st.caption(f"Case owner: {active_user}  ·  Synthetic review workspace")
     with header_right:
-        st.markdown(f'<div class="status-box">{status_badge(status, tone)}<br><span class="muted">Current case state</span></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="status-box">{status_badge(status, tone)}<br><span class="muted">Current Case State</span></div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="review-title"><span>01</span><div><strong>What the system understood</strong><small>Extracted from the customer message</small></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="review-title"><span>01</span><div><strong>Classification Confidence</strong><small>Extracted facts and confidence from the customer message</small></div></div>', unsafe_allow_html=True)
     facts = result.extracted_facts
     amount = "Not stated"
     if facts.amount_min is not None and facts.amount_max is not None:
@@ -400,8 +436,21 @@ def render_result(result: CaseResult, history: list[CaseResult], active_user: st
             availability = "Expired - manual review" if expired else "Available" if result.remedy.available else "Unavailable"
             deadline_label = f"{deadline} (passed)" if expired else str(deadline)
             st.markdown(f'<div class="decision-card"><div>{status_badge(availability, remedy_tone)}</div><h3>{safe_text("Deadline passed; manual review required" if expired else result.remedy.action)}</h3><p class="muted">Deterministic synthetic rule output</p><div class="fact-row"><span>Message type</span><strong>{safe_text(result.remedy.message_type)}</strong></div><div class="fact-row"><span>Reason code</span><strong>{safe_text(result.remedy.reason_code)}</strong></div><div class="fact-row"><span>Deadline</span><strong>{safe_text(deadline_label)}</strong></div></div>', unsafe_allow_html=True)
+    elif result.remedy and (not result.remedy.available or (result.deadline and result.deadline < date.today())):
+        expired = result.deadline is not None and result.deadline < date.today()
+        title = "Recovery window expired" if expired else "No recovery remedy available"
+        detail = (
+            f"The configured deadline of {result.deadline} has passed. This case requires manual review; no request will be raised automatically."
+            if expired
+            else f"{no_remedy_reason(result)} No customer confirmation is required."
+        )
+        st.markdown('<div class="review-title"><span>04</span><div><strong>Policy outcome</strong><small>Calculated from the synthetic rail rules</small></div></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="decision-card"><div>{status_badge("Manual review required" if expired else "No request", "amber" if expired else "red")}</div><h3>{safe_text(title)}</h3><p class="muted">{safe_text(detail)}</p><div class="fact-row"><span>Deadline</span><strong>{safe_text(str(result.deadline or "No deadline"))}</strong></div><div class="fact-row"><span>Customer confirmation</span><strong>Not required</strong></div></div>',
+            unsafe_allow_html=True,
+        )
     else:
-        st.markdown('<div class="waiting-card"><strong>Remedy and deadline</strong><span>Shown after the customer confirms the payment in chat.</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="waiting-card"><strong>Remedy and deadline</strong><span>Shown after the customer confirms an eligible payment in chat.</span></div>', unsafe_allow_html=True)
 
 setup_page("Clearline | Payment Exceptions", "C")
 ensure_demo_database()
@@ -412,6 +461,7 @@ st.markdown(
     :root { --ink:#172b49; --muted:#60738d; --line:#d2e0ee; --paper:#eef6fc; --white:#ffffff; --charcoal:#172b49; --teal:#008f86; --teal-soft:#d8f7f0; --amber:#d77a16; --amber-soft:#fff0cf; --red:#d84f5b; --red-soft:#ffe5e8; --coral:#f06f5e; --navy-soft:#e6efff; }
     html, body, [class*="css"] { font-family:'DM Sans', sans-serif; color:var(--ink); }
     .stApp { background-color:#f4f9fd; background-image:radial-gradient(circle at 7% -3%, rgba(240,111,94,.22), transparent 23rem), radial-gradient(circle at 94% 8%, rgba(71,143,236,.15), transparent 24rem), linear-gradient(rgba(23,43,73,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(23,43,73,.035) 1px, transparent 1px), linear-gradient(135deg, #eaf5ff 0%, #ffffff 52%, #e3faf4 100%); background-size:auto, auto, 28px 28px, 28px 28px, auto; }
+    .stApp:before { content:""; position:fixed; inset:0; pointer-events:none; background:linear-gradient(115deg, transparent 0 42%, rgba(255,255,255,.22) 50%, transparent 58%); background-size:220% 100%; animation:surface-sheen 18s ease-in-out infinite; opacity:.45; }
     [data-testid="stAppViewContainer"] { background:transparent; }
     [data-testid="stMainBlockContainer"] { max-width:1480px; padding:2rem 3rem 4rem; }
     [data-testid="stVerticalBlock"] { gap:.65rem; }
@@ -426,15 +476,27 @@ st.markdown(
     h3 { font-size:1rem; margin:.45rem 0 .7rem; }
     .topbar { background:transparent; color:var(--ink); margin:-2rem -3rem 1.8rem; padding:.85rem 3rem; border-bottom:1px solid var(--line); box-shadow:none; }
     .topbar:after { content:""; display:block; height:2px; margin:.75rem 0 -.85rem; background:linear-gradient(90deg, var(--coral), var(--teal), transparent 72%); opacity:.7; }
+    .topbar { animation:topbar-in .6s ease-out both; }
     .ops-link { float:right; display:inline-flex; align-items:center; gap:.4rem; margin-top:.1rem; padding:.48rem .72rem; border:1px solid #b9d7ea; border-radius:8px; background:#eaf5ff; color:#245d86 !important; font-size:.74rem; font-weight:700; text-decoration:none !important; box-shadow:0 3px 9px rgba(40,83,126,.08); }
     .ops-link:hover { border-color:#008f86; background:#d8f7f0; color:#006e68 !important; }
+    .role-link { display:block; margin-top:-.35rem; color:#087f75 !important; font-size:.68rem; font-weight:700; text-decoration:none !important; }
+    .role-link:hover { text-decoration:underline !important; }
+    .role-menu { position:relative; z-index:5; }
+    .role-menu summary { cursor:pointer; list-style:none; border:1px solid #b9d7ea; border-radius:8px; background:#fff; color:var(--ink); padding:.48rem .65rem; font-size:.74rem; font-weight:700; }
+    .role-menu summary::-webkit-details-marker { display:none; }
+    .role-menu summary:after { content:"▾"; float:right; color:var(--teal); }
+    .role-menu a { display:block; padding:.5rem .65rem; background:#fff; color:var(--ink) !important; font-size:.72rem; font-weight:600; text-decoration:none !important; }
+    .role-menu a:hover { background:var(--teal-soft); color:#006e68 !important; }
     .brand-mark { display:inline-flex; align-items:center; gap:.6rem; font-family:'Space Grotesk'; font-weight:700; font-size:1rem; letter-spacing:.01em; }
     .brand-dot { display:inline-grid; place-items:center; width:1.9rem; height:1.9rem; border-radius:9px; background:linear-gradient(145deg, var(--coral), #f09a73); color:#fff; font-size:.7rem; box-shadow:0 4px 12px rgba(231,120,97,.35); }
     .brand-sub { color:var(--muted); font-size:.7rem; margin-left:2.4rem; margin-top:-.12rem; letter-spacing:.02em; }
     .hero { position:relative; overflow:hidden; background:linear-gradient(115deg, rgba(255,255,255,.98), rgba(226,250,245,.94) 72%, rgba(231,240,255,.9)); color:var(--ink); margin:0 0 1.15rem; padding:1.45rem 1.55rem 1.5rem; border:1px solid rgba(210,224,238,.98); border-radius:16px; box-shadow:0 12px 30px rgba(40,83,126,.1); }
     .hero:after { content:""; position:absolute; right:-4rem; top:-5rem; width:15rem; height:15rem; border:1px solid rgba(8,127,117,.18); border-radius:50%; box-shadow:0 0 0 1.5rem rgba(8,127,117,.045), 0 0 0 3rem rgba(8,127,117,.025); }
     .hero { animation:rise-in .45s ease-out both; }
+    .hero:before { content:"AI-ASSISTED INTAKE"; position:absolute; right:1.5rem; bottom:1.05rem; color:rgba(0,143,134,.55); font:700 .62rem 'Space Grotesk', sans-serif; letter-spacing:.18em; }
     @keyframes rise-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes topbar-in { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes surface-sheen { 0%, 45% { background-position:150% 0; } 70%, 100% { background-position:-50% 0; } }
     .hero h1 { color:var(--ink); }
     .hero-sub { color:var(--muted); margin-top:.25rem; }
     .kicker, .section-kicker { color:var(--teal); font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
@@ -452,6 +514,12 @@ st.markdown(
     .case-ref span { display:block; color:var(--muted); font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:.25rem; }
     .case-ref strong { font-size:.86rem; }
     .status-strip { display:flex; flex-wrap:wrap; gap:.65rem 1.35rem; align-items:center; padding:.85rem 1rem; margin:.25rem 0 1.15rem; background:rgba(231,237,247,.82); border:1px solid #cbd8ea; border-radius:11px; font-size:.76rem; box-shadow:inset 4px 0 0 var(--coral), 0 5px 14px rgba(23,35,60,.05); animation:rise-in .55s ease-out both; }
+    .ai-signal-card { display:flex; align-items:center; gap:.75rem; padding:.75rem .9rem; margin:.15rem 0 .9rem; border:1px solid #b8ddd7; border-radius:12px; background:linear-gradient(105deg,rgba(216,247,240,.95),rgba(255,255,255,.9)); box-shadow:0 6px 16px rgba(40,83,126,.07); }
+    .ai-brain { display:grid; place-items:center; flex:0 0 auto; width:2.15rem; height:2.15rem; border-radius:10px; background:#087f75; color:#fff; font-size:1.2rem; box-shadow:0 0 0 5px rgba(8,127,117,.1), 0 6px 14px rgba(8,127,117,.22); }
+    .ai-signal-card strong, .ai-signal-label { display:block; }
+    .ai-signal-label { color:#087f75; font-size:.62rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    .ai-signal-card strong { margin-top:.14rem; color:var(--ink); font-size:.8rem; line-height:1.35; }
+    .ai-signal-state { margin-left:auto; color:#087f75; font:700 .62rem 'Space Grotesk',sans-serif; letter-spacing:.1em; }
     .status-strip span { display:inline-flex; align-items:center; gap:.35rem; }
     .review-title { display:flex; align-items:center; gap:.7rem; margin:1.25rem 0 .55rem; }
     .review-title > span { display:grid; place-items:center; width:1.8rem; height:1.8rem; border-radius:7px; background:var(--coral); color:#fff; font-size:.72rem; font-weight:700; box-shadow:0 3px 8px rgba(231,120,97,.25); }
@@ -507,6 +575,8 @@ st.markdown(
     .stTextArea textarea, .stTextInput input { border:1px solid #c9d6d3; border-radius:8px; background:#fbfdfc; }
     .stTextArea textarea:focus, .stTextInput input:focus { border-color:var(--teal); box-shadow:0 0 0 2px rgba(23,135,125,.12); }
     .stTextArea textarea:hover, .stTextInput input:hover { border-color:#9eb5c9; }
+    .panel, .info-card, .candidate-card, .decision-card, .output-card, .empty-card { transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .info-card:hover, .candidate-card:hover, .decision-card:hover, .output-card:hover { transform:translateY(-2px); border-color:#b7d7d2; box-shadow:0 14px 28px rgba(40,83,126,.12); }
     [data-testid="stFileUploader"] { border:1px dashed #afc5c0; border-radius:8px; background:rgba(255,255,255,.55); padding:.25rem; }
     [data-testid="stExpander"] { border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.68); }
     [data-testid="stTabs"] button { font-weight:600; }
@@ -517,6 +587,20 @@ st.markdown(
     [data-testid="stMetric"] { background:#fff; border:1px solid var(--line); border-radius:9px; padding:.7rem .85rem; }
     [data-testid="stVerticalBlockBorderWrapper"] { border-color:rgba(219,227,237,.85); border-radius:14px; }
     @media (max-width: 800px) { [data-testid="stMainBlockContainer"] { padding:1.2rem 1rem 3rem; } .topbar { margin:-1.2rem -1rem 1.2rem; padding:.8rem 1rem; } .hero { padding:1.1rem; } .wa-message { max-width:100%; margin-left:0 !important; margin-right:0 !important; } }
+    /* Customer workspace hierarchy: warm, conversational, and spacious. */
+    .theme-header h1, .hero h1 { font-size:clamp(2.15rem, 3.2vw, 3.15rem); line-height:1.02; letter-spacing:-.035em; font-weight:700; }
+    .theme-subtitle, .hero-sub { font-size:.98rem; line-height:1.65; max-width:58ch; }
+    .section-kicker, .kicker { font-size:.66rem; letter-spacing:.18em; font-weight:800; }
+    .review-title strong { font-size:1.08rem; letter-spacing:-.01em; }
+    .review-title small { font-size:.76rem; line-height:1.45; }
+    .info-card, .candidate-card, .decision-card, .output-card, .empty-card { font-size:.9rem; line-height:1.6; }
+    .fact-row { font-size:.88rem; }
+    .candidate-grid { font-size:.87rem; }
+    .candidate-choice, .wa-message, .bubble { font-size:.88rem; line-height:1.6; }
+    .muted, .candidate-grid b { font-size:.76rem; }
+    .timeline-item { font-size:.84rem; line-height:1.45; }
+    .timeline-item span, .timeline-item small { font-size:.64rem; }
+    .stTextArea textarea, .stTextInput input { font-size:.9rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -548,9 +632,9 @@ if "chat_threads" not in st.session_state:
     st.session_state.chat_threads = {}
 
 st.markdown('<div class="topbar"><div class="brand-mark"><span class="brand-dot">CL</span>Clearline</div><div class="brand-sub">Payment exceptions workspace</div></div>', unsafe_allow_html=True)
-nav_left, nav_ops, nav_demo, nav_user, nav_clear = st.columns([3.2, 1.8, 1.4, 2.2, 1.6], gap="medium")
-with nav_ops:
-    st.link_button("Operations console", "http://localhost:8502", icon=":material/open_in_new:", width="stretch")
+nav_left, nav_role, nav_demo, nav_user, nav_clear = st.columns([3.5, 2.1, 1.2, 2.2, 1.5], gap="medium")
+with nav_role:
+    render_role_selector()
 with nav_demo:
     st.markdown(f'<div style="padding-top:.45rem;text-align:right">{status_badge("Synthetic demo", "teal")}</div>', unsafe_allow_html=True)
 with nav_user:
@@ -573,6 +657,16 @@ if history:
         st.session_state.active_case_ids[active_user] = history[-1].case_id
     st.session_state.active_case_id = st.session_state.active_case_ids[active_user]
 current = next((item for item in history if item.case_id == st.session_state.active_case_ids.get(active_user)), None)
+if current and current.clarification_question and st.session_state.drafts.get(active_user):
+    refreshed = process_claim(st.session_state.drafts[active_user], DATABASE_PATH, debtor_account=profile["account"])
+    refreshed.case_id = current.case_id
+    preserve_case_dates(refreshed, current)
+    current_index = next((index for index, item in enumerate(history) if item.case_id == current.case_id), None)
+    if current_index is not None:
+        history[current_index] = refreshed
+        current = refreshed
+        st.session_state.chat_threads.pop(current.case_id, None)
+        save_saved_state()
 if current and current.clarification_question:
     thread = st.session_state.chat_threads.get(current.case_id, [])
     for message in thread:
@@ -620,7 +714,7 @@ st.divider()
 left, right = st.columns([1.05, .95], gap="large")
 with left:
     st.markdown('<div class="section-kicker">01 / Claim conversation</div>', unsafe_allow_html=True)
-    st.markdown("### Customer intake")
+    st.markdown("### Customer Intake")
     claim_key = f"claim_{active_user}"
     if st.session_state.pop(f"reset_{claim_key}", False):
         st.session_state[claim_key] = ""
@@ -684,6 +778,20 @@ with left:
                 st.rerun()
             except Exception:
                 note("Claim not processed", "Check the intake text and try again.", "hold")
+    # Re-evaluate an old clarification using the text currently visible in the intake box.
+    if current and current.clarification_question:
+        current_draft = claim.strip() or st.session_state.drafts.get(active_user, "")
+        if current_draft:
+            refreshed = process_claim(current_draft, DATABASE_PATH, debtor_account=profile["account"])
+            refreshed.case_id = current.case_id
+            preserve_case_dates(refreshed, current)
+            current_index = next((index for index, item in enumerate(history) if item.case_id == current.case_id), None)
+            if current_index is not None:
+                history[current_index] = refreshed
+                current = refreshed
+                st.session_state.chat_threads.pop(current.case_id, None)
+                save_saved_state()
+
     st.markdown("### Conversation")
     if claim.strip() or current:
         if current:
@@ -691,8 +799,10 @@ with left:
             if not thread:
                 if st.session_state.drafts[active_user]:
                     thread.append({"role": "customer", "text": st.session_state.drafts[active_user]})
-                if customer_response(current):
-                    thread.append({"role": "agent", "text": customer_response(current)})
+            initial_response = customer_response(current)
+            if initial_response and not any(item.get("role") == "agent" for item in thread):
+                thread.append({"role": "agent", "text": initial_response})
+                save_saved_state()
             if current.clarification_question:
                 detailed_question = clarification_response(current)
                 thread.append({"role": "agent", "text": detailed_question}) if not any(item["text"] == detailed_question for item in thread) else None
@@ -827,7 +937,7 @@ with left:
             st.markdown(f'<div class="wa-message customer"><span>Customer</span>{safe_text(claim.strip())}</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="empty-card">Start with the customer story. The original message will appear beside the structured case review.</div>', unsafe_allow_html=True)
-    st.markdown("### Case history")
+    st.markdown("### Case History")
     if history:
         for item in reversed(history[-5:]):
             item_status, _ = result_status(item)
@@ -837,13 +947,20 @@ with left:
                 st.session_state.active_case_ids[active_user] = item.case_id
                 st.session_state.active_case_id = item.case_id
                 st.rerun()
-            reference = item.reference_id or "Not submitted"
+            no_remedy = (
+                item.case_status is CaseStatus.NO_REMEDY
+                or item.request_status is RequestStatus.NOT_AVAILABLE
+                or (item.remedy is not None and not item.remedy.available)
+            )
+            outcome_label = "Outcome" if no_remedy else "Approved"
+            outcome_value = "No Inter-bank Request" if no_remedy else format_case_date(item.approved_at)
+            outcome_detail = "Policy Decision" if no_remedy else f"Reference {item.reference_id or 'Not submitted'}"
             st.markdown(
                 f'<div class="timeline-item">'
                 f'<div><strong>{safe_text(label)}</strong><small>{safe_text(item.case_id)}</small></div>'
                 f'<div><span>Latest status</span><strong>{safe_text(item_status.replace("_", " ").title())}</strong><small>{safe_text(request_status_label)}</small></div>'
                 f'<div><span>Raised</span><strong>{safe_text(format_case_date(item.raised_at))}</strong><small>Last updated {safe_text(format_case_date(item.last_updated_at))}</small></div>'
-                f'<div><span>Approved</span><strong>{safe_text(format_case_date(item.approved_at))}</strong><small>Reference {safe_text(reference)}</small></div>'
+                f'<div><span>{outcome_label}</span><strong>{safe_text(outcome_value)}</strong><small>{safe_text(outcome_detail)}</small></div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -852,7 +969,7 @@ with left:
 
 with right:
     st.markdown('<div class="section-kicker">02 / Decision workspace</div>', unsafe_allow_html=True)
-    st.markdown("### Structured case review")
+    st.markdown("### Structured Case Review")
     if current:
         render_result(current, history, active_user)
     else:

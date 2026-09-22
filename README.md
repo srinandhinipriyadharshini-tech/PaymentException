@@ -43,6 +43,8 @@ The generated PowerPoint deck is [UC02_Core_Payment_Exceptions_Pitch.pptx](UC02_
 
 The regenerated demo data includes July, August, and September scenarios across ACH, WIRE, RTP, and FEDNOW, including expired settled payments and a pending in-progress FEDNOW payment.
 
+For the complete AI Lab demo, run `start_demo.ps1` from the repository root. It starts the customer portal on 8501, the Payment Exception Analyst console on 8502, and the live case API on 8503. Verify with `http://localhost:8501`, `http://localhost:8502`, `http://localhost:8503/health`, and `http://localhost:8503/api/cases`. The optional React console runs separately from `frontend` with `npm.cmd run dev -- --host 127.0.0.1`.
+
 ## Troubleshooting
 
 If `py -3.14` is unavailable, install Python 3.14 or use the full Python executable path. If DuckDB reports a locked database, stop Streamlit and rerun the generator. If imports fail, run commands from this project root. Regenerating the database is safe and deterministic.

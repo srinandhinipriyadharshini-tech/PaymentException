@@ -49,7 +49,21 @@ def process_claim(claim_text: str, db_path=None, adapter=None, agent_confirmed: 
     ranked = RankedCandidates(candidates=adapter.rank_candidates(ranking_facts, candidates))
     case_id = f"CASE-SYN-{uuid4().int % 1000000:06d}"
     if not ranked.candidates:
-        if facts.day_of_month and facts.amount_min is not None:
+        complete_search_facts = bool(
+            facts.amount_min is not None
+            and facts.amount_max is not None
+            and facts.date_min is not None
+            and facts.date_max is not None
+            and facts.beneficiary_description
+        )
+        if complete_search_facts:
+            amount_label = f"{facts.amount_min:,.2f}" if facts.amount_min == facts.amount_max else f"{facts.amount_min:,.2f} to {facts.amount_max:,.2f}"
+            question = (
+                f"There is no transaction available for amount {amount_label} on {facts.date_min} "
+                f"to {facts.beneficiary_description} for this customer account. "
+                "Please provide the correct amount, date, or beneficiary."
+            )
+        elif facts.day_of_month and facts.amount_min is not None:
             stated_amount = (facts.amount_min + facts.amount_max) / 2 if facts.amount_max is not None else facts.amount_min
             question = f"I captured approximately {stated_amount:.2f} on day {facts.day_of_month}, but could not locate a payment. Please provide the correct date, beneficiary, or amount."
         elif facts.week_of_month and facts.month_of_year and facts.amount_min is not None:

@@ -12,6 +12,15 @@ def test_intake_abstains_without_searchable_facts():
     assert result.abstained and result.value is None
 
 
+def test_intake_extracts_uploaded_litware_claim():
+    result = IntakeAI().extract("I did not authorise the pending WIRE payment of GBP 999999 on 2026-09-21 to Litware.")
+    assert result.value.amount_min == Decimal("999999")
+    assert result.value.amount_max == Decimal("999999")
+    assert result.value.date_min == date(2026, 9, 21)
+    assert result.value.rail == "WIRE"
+    assert result.value.beneficiary_description == "Litware"
+
+
 def test_matching_abstains_when_candidates_are_empty():
     result = MatchingAI().rank(IntakeAI().extract("26th").value, [])
     assert result.abstained and result.value is not None

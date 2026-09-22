@@ -47,7 +47,7 @@ class Payment(BaseModel):
     amount: Decimal = Field(ge=0)
     currency: str
     value_date: date
-    settlement_timestamp: datetime
+    settlement_timestamp: datetime | None = None
     debtor_account: str
     creditor_account: str
     creditor_registered_name: str

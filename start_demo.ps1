@@ -8,6 +8,7 @@ $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
 $CustomerUrl = "http://localhost:8501"
 $AdminUrl = "http://localhost:8502"
+$ApiUrl = "http://localhost:8503/api/cases"
 $Requirements = Join-Path $Root "requirements.txt"
 $Database = Join-Path $Root "data\payment_exceptions.duckdb"
 
@@ -57,7 +58,8 @@ if (-not (Test-Path $Database)) {
 }
 
 function Test-PortFree([int] $Port) {
-    return -not (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+    $listener = netstat -ano | Select-String "LISTENING\s+\d+$" | Where-Object { $_.Line -match ":$Port\s" }
+    return -not $listener
 }
 
 function Wait-ForPort([int] $Port, [int] $TimeoutSeconds = 30) {
@@ -70,7 +72,7 @@ function Wait-ForPort([int] $Port, [int] $TimeoutSeconds = 30) {
     return $false
 }
 
-foreach ($Port in @(8501, 8502)) {
+foreach ($Port in @(8501, 8502, 8503)) {
     if (-not (Test-PortFree $Port)) {
         Write-Warning "Port $Port is already in use. The existing service will be kept running."
     }
@@ -90,13 +92,21 @@ if (Test-PortFree 8502) {
     )
 }
 
-if (-not (Wait-ForPort 8501) -or -not (Wait-ForPort 8502)) {
-    throw "A Streamlit service did not start within 30 seconds. Check the server windows for the startup error."
+if (Test-PortFree 8503) {
+    Start-Process powershell.exe -ArgumentList @(
+        "-NoExit", "-ExecutionPolicy", "Bypass", "-Command",
+        "& '$Python' '$Root\api.py'"
+    )
+}
+
+if (-not (Wait-ForPort 8501) -or -not (Wait-ForPort 8502) -or -not (Wait-ForPort 8503)) {
+    throw "A demo service did not start within 30 seconds. Check the server windows for the startup error."
 }
 
 Start-Process $CustomerUrl
 Start-Process $AdminUrl
 Write-Host "Customer portal: $CustomerUrl"
 Write-Host "Admin console:   $AdminUrl"
+Write-Host "Case API:        $ApiUrl"
 Write-Host "Close the two Streamlit windows to stop the demo."
 Write-Host "For future launches, use: .\start_demo.ps1 -SkipInstall" -ForegroundColor DarkGray

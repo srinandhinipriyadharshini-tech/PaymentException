@@ -1,0 +1,13 @@
+payment_id,debtor_account,rail,amount,status,funds_moved,expected_behavior
+PMT-SYN-001001,ACCT-SYN-000001,ACH,1250.00,SETTLED,true,"Searchable settled ACH payment; category and deadline rules determine recovery path"
+PMT-SYN-001002,ACCT-SYN-000002,RTP,799.00,PENDING,false,"Searchable RTP payment; instant-rail policy prevents a normal recovery remedy"
+PMT-SYN-001003,ACCT-SYN-000003,WIRE,250000.00,SETTLED,true,"Searchable settled WIRE payment; category and deadline rules determine recovery path"
+PMT-SYN-001004,ACCT-SYN-000004,FEDNOW,1900.00,SETTLED,true,"Searchable final FEDNOW payment; no recovery request under rail-finality rules"
+PMT-SYN-001005,ACCT-SYN-000005,ACH,150.00,REJECTED,false,"Searchable rejected ACH payment; analyst should review payment status before recovery"
+PMT-SYN-001006,ACCT-SYN-000006,RTP,500.00,FAILED,false,"Searchable failed RTP payment; no settled funds to recover and analyst review required"
+PMT-SYN-001007,ACCT-SYN-000001,WIRE,85000.00,CANCELLED,false,"Searchable cancelled WIRE payment; analyst should review payment status before recovery"
+PMT-SYN-001008,ACCT-SYN-000002,FEDNOW,3200.00,SETTLED,true,"Searchable final FEDNOW payment; no recovery request under rail-finality rules"
+PMT-SYN-001009,ACCT-SYN-000003,ACH,75.00,RETURNED,false,"Searchable returned ACH payment; no new recovery request should be raised automatically"
+PMT-SYN-001010,ACCT-SYN-000004,RTP,1200.00,SETTLED,true,"Searchable final RTP payment; no recovery request under rail-finality rules"
+PMT-SYN-001011,ACCT-SYN-000005,WIRE,999999.00,PENDING,false,"Searchable pending WIRE payment; analyst review required before any recovery action"
+PMT-SYN-001012,ACCT-SYN-000006,FEDNOW,25.00,SETTLED,true,"Searchable final FEDNOW payment; no recovery request under rail-finality rules"

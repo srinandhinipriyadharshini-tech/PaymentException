@@ -92,7 +92,7 @@ If `npm` is not recognized after installing Node.js, close and reopen VS Code so
 
 ## 5. Run the applications
 
-For a live demo, run the included setup-and-launch script from the repository root. It creates `.venv` when needed, installs `requirements.txt`, creates the synthetic DuckDB fixture, starts both Streamlit portals, waits for ports 8501 and 8502, and opens both URLs:
+For a live demo, run the included setup-and-launch script from the repository root. It creates `.venv` when needed, installs `requirements.txt`, creates the synthetic DuckDB fixture, starts both Streamlit portals plus the read-only live case API, waits for ports 8501, 8502, and 8503, and opens both portal URLs:
 
 ```powershell
 Set-Location Payment_Exceptions
@@ -105,9 +105,27 @@ After the first successful setup, use the faster repeat-launch command:
 & powershell.exe -ExecutionPolicy Bypass -File .\start_demo.ps1 -SkipInstall
 ```
 
-The script preserves any service already using ports 8501 or 8502. Keep the two Streamlit windows open during the hackathon; closing them stops the local servers.
+The script preserves any service already using ports 8501, 8502, or 8503. The React operations console can fetch live cases from `http://localhost:8503/api/cases`; Vite proxies `/api` to that service during development and preview. Clarification-only customer cases are intentionally excluded from the analyst/API queue until a payment is matched. Keep the service windows open during the hackathon; closing them stops the local servers.
 
-If Python is missing, install Python 3.14 for Windows, reopen PowerShell, and run the setup command again. If the browser does not open automatically, use `http://localhost:8501` for the customer portal and `http://localhost:8502` for the operations console.
+If Python is missing, install Python 3.14 for Windows, reopen PowerShell, and run the setup command again. If the browser does not open automatically, use `http://localhost:8501` for the customer portal, `http://localhost:8502` for the Payment Exception Analyst console, and `http://localhost:8503/api/cases` to verify the live case feed.
+
+Check service health before the demo:
+
+```powershell
+Invoke-WebRequest http://localhost:8501
+Invoke-WebRequest http://localhost:8502
+Invoke-WebRequest http://localhost:8503/health
+Invoke-WebRequest http://localhost:8503/api/cases
+```
+
+The launch script starts the two Streamlit workspaces and the case API. Start the optional React console separately from `frontend`:
+
+```powershell
+Set-Location Payment_Exceptions\frontend
+npm.cmd run dev -- --host 127.0.0.1
+```
+
+Open the Vite URL printed in the terminal, normally `http://127.0.0.1:5173`.
 
 Use separate terminals for each server.
 
@@ -198,6 +216,21 @@ The business rule used by the demo is:
 | FEDNOW | Final instant rail | `NO_REMEDY`, no inter-bank request; pending status is still shown |
 
 The machine-readable version of this matrix is [data/uc02_test_scenarios.csv](data/uc02_test_scenarios.csv). It includes `debtor_account` and `creditor_account` for every matched payment, including both account possibilities for the ambiguous C06 case. Use the account values to validate customer ownership and beneficiary matching; do not invent account numbers in new test cases.
+
+### Six-user uploaded payment data
+
+The workbook rows are seeded into `data/payment_exceptions.duckdb` by `data/create_database.py`. The expected behavior matrix is [data/six_user_payment_expectations.csv](data/six_user_payment_expectations.csv), and claim examples are in [data/six_user_test_claims.csv](data/six_user_test_claims.csv).
+
+The current-date positive request scenarios are:
+
+| Payment | Rail/status | Expected result |
+| --- | --- | --- |
+| `PMT-SYN-001001` | ACH / SETTLED | ACH return request can be drafted before the five-day deadline |
+| `PMT-SYN-001003` | WIRE / SETTLED | WIRE recall request can be drafted before the one-day deadline |
+| `PMT-SYN-001002` | RTP / PENDING | RTP return request can be drafted because funds have not moved |
+| `PMT-SYN-001011` | WIRE / PENDING | WIRE recall request can be drafted because funds have not moved |
+
+Each still requires customer confirmation and Payment Exception Analyst approval. `FAILED`, `CANCELLED`, `REJECTED`, and `RETURNED` payments do not start automatic recovery requests. Clarification-only cases without a selected payment remain in the customer workspace and are excluded from the analyst queue/API.
 
 ## 7. Voice demo scenarios
 

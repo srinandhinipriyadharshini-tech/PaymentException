@@ -77,7 +77,21 @@ class DemoAIAdapter(AIAdapter):
             except ValueError:
                 continue
         rail = next((item for item in ("ACH", "WIRE", "RTP", "FEDNOW") if item.lower() in lowered), None)
-        beneficiary_aliases = (("northwind", "Northwind"), ("blue oak", "Blue Oak"), ("cedar", "Cedar Works"), ("lumen", "Lumen Health"))
+        beneficiary_aliases = (
+            ("northwind", "Northwind"),
+            ("blue oak", "Blue Oak"),
+            ("cedar", "Cedar Works"),
+            ("lumen", "Lumen Health"),
+            ("john", "John"),
+            ("fabrikam", "Fabrikam"),
+            ("contoso", "Contoso"),
+            ("adventure", "Adventure"),
+            ("tailspin", "Tailspin"),
+            ("wingtip", "Wingtip"),
+            ("blueyonder", "BlueYonder"),
+            ("litware", "Litware"),
+            ("woodgrove", "Woodgrove"),
+        )
         beneficiary = next((canonical for alias, canonical in beneficiary_aliases if alias in lowered), None)
         match = re.search(r"says\s+([A-Za-z][A-Za-z ]{2,35}?)(?:\s+on|\s+for|\s+was|\s+of|[,.]|$)", text, re.I)
         match = match or re.search(r"(?:to|from|at)\s+([A-Za-z][A-Za-z ]{2,35}?)(?:\s+on|\s+for|\s+was|\s+of|[,.]|$)", text, re.I)

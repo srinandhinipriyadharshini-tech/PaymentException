@@ -10,6 +10,21 @@ DB_PATH = Path(__file__).with_name("payment_exceptions.duckdb")
 SEED = 20260919
 RAILS = ("ACH", "WIRE", "RTP", "FEDNOW")
 
+USER_TEST_PAYMENTS = [
+    ("PMT-SYN-001001", "ACH", Decimal("1250.00"), "GBP", datetime(2026, 9, 21).date(), datetime(2026, 9, 21, 9, 0), "ACCT-SYN-000001", "ACCT-SYN-000251", "Northwind Supplies Ltd", "Northwind", "SETTLED", True),
+    ("PMT-SYN-001002", "RTP", Decimal("799.00"), "GBP", datetime(2026, 9, 21).date(), datetime(2026, 9, 21, 9, 0), "ACCT-SYN-000002", "ACCT-SYN-000252", "John Smith", "John", "PENDING", False),
+    ("PMT-SYN-001003", "WIRE", Decimal("250000.00"), "GBP", datetime(2026, 9, 21).date(), datetime(2026, 9, 21, 9, 30), "ACCT-SYN-000003", "ACCT-SYN-000253", "Fabrikam Treasury Services", "Fabrikam", "SETTLED", True),
+    ("PMT-SYN-001004", "FEDNOW", Decimal("1900.00"), "GBP", datetime(2026, 9, 21).date(), datetime(2026, 9, 21, 9, 35), "ACCT-SYN-000004", "ACCT-SYN-000254", "Contoso Retail Ltd", "Contoso", "SETTLED", True),
+    ("PMT-SYN-001005", "ACH", Decimal("150.00"), "GBP", datetime(2026, 9, 21).date(), None, "ACCT-SYN-000005", "ACCT-SYN-000255", "Adventure Works Ltd", "Adventure", "REJECTED", False),
+    ("PMT-SYN-001006", "RTP", Decimal("500.00"), "GBP", datetime(2026, 9, 21).date(), None, "ACCT-SYN-000006", "ACCT-SYN-000256", "", "Unknown", "FAILED", False),
+    ("PMT-SYN-001007", "WIRE", Decimal("85000.00"), "GBP", datetime(2026, 9, 22).date(), None, "ACCT-SYN-000001", "ACCT-SYN-000257", "Tailspin Financial Services", "Tailspin", "CANCELLED", False),
+    ("PMT-SYN-001008", "FEDNOW", Decimal("3200.00"), "GBP", datetime(2026, 9, 21).date(), datetime(2026, 9, 21, 10, 20), "ACCT-SYN-000002", "ACCT-SYN-000258", "Wingtip Technologies Ltd", "Wingtip", "SETTLED", True),
+    ("PMT-SYN-001009", "ACH", Decimal("75.00"), "GBP", datetime(2026, 9, 21).date(), None, "ACCT-SYN-000003", "ACCT-SYN-000259", "Blue Yonder Airlines", "BlueYonder", "RETURNED", False),
+    ("PMT-SYN-001010", "RTP", Decimal("1200.00"), "GBP", datetime(2026, 9, 21).date(), datetime(2026, 9, 21, 11, 10), "ACCT-SYN-000004", "ACCT-SYN-000260", "Johnathan Smith Holdings Ltd", "John", "SETTLED", True),
+    ("PMT-SYN-001011", "WIRE", Decimal("999999.00"), "GBP", datetime(2026, 9, 21).date(), None, "ACCT-SYN-000005", "ACCT-SYN-000261", "Litware Global Treasury", "Litware", "PENDING", False),
+    ("PMT-SYN-001012", "FEDNOW", Decimal("25.00"), "GBP", datetime(2026, 9, 21).date(), datetime(2026, 9, 21, 14, 5), "ACCT-SYN-000006", "ACCT-SYN-000262", "Woodgrove Bank Ltd", "Woodgrove", "SETTLED", True),
+]
+
 
 def build_rows() -> list[tuple]:
     base = datetime(2026, 7, 1, 9, 0)
@@ -53,6 +68,7 @@ def create_database(path: Path = DB_PATH) -> Path:
     connection.executemany("INSERT INTO payments VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", build_rows())
     connection.execute("CREATE INDEX payments_date_idx ON payments(value_date)")
     connection.execute("CREATE INDEX payments_rail_idx ON payments(rail)")
+    connection.executemany("INSERT OR REPLACE INTO payments VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", USER_TEST_PAYMENTS)
     connection.close()
     return path
 

@@ -142,6 +142,20 @@ def test_unmatched_claim_returns_clarification():
     assert result.clarification_question
 
 
+def test_complete_unavailable_combination_explains_no_transaction():
+    result = process_claim(
+        "I did not authorise the ACH payment of GBP 999999 on 2026-09-21 to Litware.",
+        DB,
+        debtor_account="ACCT-SYN-000001",
+    )
+    assert result.selected_payment is None
+    assert result.clarification_question.startswith("There is no transaction available")
+    assert "999,999.00" in result.clarification_question
+    assert "2026-09-21" in result.clarification_question
+    assert "Litware" in result.clarification_question
+    assert "correct amount, date, or beneficiary" in result.clarification_question
+
+
 def test_claim_without_date_asks_before_classification():
     result = process_claim("Payment of 3200 to Cedar was a scam.", DB, debtor_account="ACCT-SYN-000001")
     assert result.case_status.value == "CLARIFICATION_REQUIRED"

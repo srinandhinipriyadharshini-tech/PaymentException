@@ -2,43 +2,85 @@
   "histories": {
     "Maya Patel": [
       {
-        "case_id": "CASE-SYN-813678",
-        "case_status": "CLOSED",
-        "claim_category": "UNAUTHORISED",
-        "category": "UNAUTHORISED",
-        "request_status": "NOT_AVAILABLE",
-        "reference_id": "SIM-ACH-813678",
-        "rail": "ACH",
+        "case_id": "CASE-SYN-068498",
+        "case_status": "CLARIFICATION_REQUIRED",
+        "claim_category": null,
+        "category": null,
+        "request_status": "NOT_CREATED",
+        "reference_id": null,
+        "rail": null,
         "remedy_available": false,
         "agent_approval_required": true,
         "agent_approved": false,
         "extracted_facts": {
-          "amount_min": "1250",
-          "amount_max": "1250",
-          "date_min": "2026-01-02",
-          "date_max": "2026-01-02",
+          "amount_min": "999999",
+          "amount_max": "999999",
+          "date_min": "2026-09-21",
+          "date_max": "2026-09-21",
           "day_of_month": null,
           "month_of_year": null,
           "week_of_month": null,
-          "beneficiary_description": "Northwind",
-          "customer_reason": "unauthorised",
-          "rail": "ACH",
+          "beneficiary_description": "Litware",
+          "customer_reason": "",
+          "rail": "WIRE",
+          "customer_account": "ACCT-SYN-000001"
+        },
+        "ranked_candidates": {
+          "candidates": [],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": null,
+        "remedy": null,
+        "deadline": null,
+        "confidence": 0.0,
+        "clarification_question": "There is no transaction available for amount 999,999.00 on 2026-09-21 to Litware for this customer account. Please provide the correct amount, date, or beneficiary.",
+        "customer_message": "",
+        "interbank_request": "",
+        "redacted": true,
+        "agent_confirmed": false,
+        "raised_at": "2026-09-22T07:07:32.055355",
+        "approved_at": null,
+        "last_updated_at": "2026-09-22T07:15:07.199943"
+      },
+      {
+        "case_id": "CASE-SYN-921053",
+        "case_status": "CLOSED",
+        "claim_category": "AUTHORISED_BUT_SCAMMED",
+        "category": "AUTHORISED_BUT_SCAMMED",
+        "request_status": "NOT_AVAILABLE",
+        "reference_id": "SIM-RTP-921053",
+        "rail": "RTP",
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "3200",
+          "amount_max": "3200",
+          "date_min": "2026-09-05",
+          "date_max": "2026-09-05",
+          "day_of_month": null,
+          "month_of_year": null,
+          "week_of_month": null,
+          "beneficiary_description": "Cedar Works",
+          "customer_reason": "authorised but scammed",
+          "rail": "RTP",
           "customer_account": "ACCT-SYN-000001"
         },
         "ranked_candidates": {
           "candidates": [
             {
               "payment": {
-                "payment_id": "PMT-SYN-000001",
-                "rail": "ACH",
-                "amount": "1250.00",
+                "payment_id": "PMT-SYN-004999",
+                "rail": "RTP",
+                "amount": "3200.00",
                 "currency": "GBP",
-                "value_date": "2026-01-02",
-                "settlement_timestamp": "2026-01-02T09:00:00",
+                "value_date": "2026-09-05",
+                "settlement_timestamp": "2026-09-05T09:00:00",
                 "debtor_account": "ACCT-SYN-000001",
-                "creditor_account": "ACCT-SYN-000251",
-                "creditor_registered_name": "Northwind Supplies Ltd",
-                "creditor_trading_name": "Northwind",
+                "creditor_account": "ACCT-SYN-005249",
+                "creditor_registered_name": "Cedar Works Inc",
+                "creditor_trading_name": "Cedar Works",
                 "status": "SETTLED",
                 "funds_moved": true
               },
@@ -55,40 +97,40 @@
           "abstention_reason": null
         },
         "selected_payment": {
-          "payment_id": "PMT-SYN-000001",
-          "rail": "ACH",
-          "amount": "1250.00",
+          "payment_id": "PMT-SYN-004999",
+          "rail": "RTP",
+          "amount": "3200.00",
           "currency": "GBP",
-          "value_date": "2026-01-02",
-          "settlement_timestamp": "2026-01-02T09:00:00",
+          "value_date": "2026-09-05",
+          "settlement_timestamp": "2026-09-05T09:00:00",
           "debtor_account": "ACCT-SYN-000001",
-          "creditor_account": "ACCT-SYN-000251",
-          "creditor_registered_name": "Northwind Supplies Ltd",
-          "creditor_trading_name": "Northwind",
+          "creditor_account": "ACCT-SYN-005249",
+          "creditor_registered_name": "Cedar Works Inc",
+          "creditor_trading_name": "Cedar Works",
           "status": "SETTLED",
           "funds_moved": true
         },
         "remedy": {
-          "category": "UNAUTHORISED",
-          "action": "Open an unauthorised-payment investigation",
-          "rationale": "Configured recovery window has expired; escalate and close without submitting a request.",
+          "category": "AUTHORISED_BUT_SCAMMED",
+          "action": "Escalate for manual review",
+          "rationale": "Authorised-scam claims require manual handling and do not promise recovery.",
           "available": false,
           "requires_human_review": true,
-          "message_type": "AC_RETURN",
-          "reason_code": "SYN_R10",
-          "deadline_days": 60,
+          "message_type": "none",
+          "reason_code": "none",
+          "deadline_days": null,
           "recovery_guaranteed": false
         },
-        "deadline": "2026-03-03",
-        "confidence": 0.94,
+        "deadline": null,
+        "confidence": 0.92,
         "clarification_question": null,
-        "customer_message": "We recorded your unauthorised claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
-        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category UNAUTHORISED. This request does not guarantee recovery.",
+        "customer_message": "We recorded your authorised_but_scammed claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category AUTHORISED_BUT_SCAMMED. This request does not guarantee recovery.",
         "redacted": true,
         "agent_confirmed": false,
-        "raised_at": "2026-09-21T19:05:04.869349",
-        "approved_at": "2026-09-21T19:12:17.780525",
-        "last_updated_at": "2026-09-21T19:12:17.780525"
+        "raised_at": "2026-09-22T07:15:07.268298",
+        "approved_at": "2026-09-22T07:20:32.373081",
+        "last_updated_at": "2026-09-22T07:20:32.373081"
       }
     ],
     "Jordan Lee": [
@@ -183,11 +225,11 @@
       },
       {
         "case_id": "CASE-SYN-934752",
-        "case_status": "ESCALATED",
+        "case_status": "CLOSED",
         "claim_category": "ERRONEOUS",
         "category": "ERRONEOUS",
         "request_status": "NOT_AVAILABLE",
-        "reference_id": null,
+        "reference_id": "SIM-ACH-934752",
         "rail": "ACH",
         "remedy_available": false,
         "agent_approval_required": true,
@@ -267,13 +309,13 @@
         "redacted": true,
         "agent_confirmed": false,
         "raised_at": "2026-09-21T18:53:24.235064",
-        "approved_at": null,
-        "last_updated_at": "2026-09-21T18:53:24.235066"
+        "approved_at": "2026-09-21T22:26:32.602902",
+        "last_updated_at": "2026-09-21T22:26:32.602902"
       }
     ],
     "Sam Rivera": [
       {
-        "case_id": "CASE-SYN-963010",
+        "case_id": "CASE-SYN-382930",
         "case_status": "ESCALATED",
         "claim_category": "ERRONEOUS",
         "category": "ERRONEOUS",
@@ -284,16 +326,16 @@
         "agent_approval_required": true,
         "agent_approved": false,
         "extracted_facts": {
-          "amount_min": "500",
-          "amount_max": "1999",
+          "amount_min": "900",
+          "amount_max": "900",
           "date_min": "2026-01-02",
           "date_max": "2026-01-02",
           "day_of_month": null,
           "month_of_year": null,
           "week_of_month": null,
-          "beneficiary_description": "Blue Oak",
+          "beneficiary_description": "Blue Oa",
           "customer_reason": "erroneous",
-          "rail": null,
+          "rail": "WIRE",
           "customer_account": "ACCT-SYN-000003"
         },
         "ranked_candidates": {
@@ -357,14 +399,194 @@
         "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category ERRONEOUS. This request does not guarantee recovery.",
         "redacted": true,
         "agent_confirmed": false,
-        "raised_at": "2026-09-21T18:53:24.235096",
+        "raised_at": "2026-09-22T07:12:47.962578",
         "approved_at": null,
-        "last_updated_at": "2026-09-21T18:53:24.235097"
+        "last_updated_at": "2026-09-22T07:12:47.962581"
       }
     ],
     "Alex Morgan": [],
-    "Priya Shah": [],
-    "Taylor Kim": []
+    "Priya Shah": [
+      {
+        "case_id": "CASE-SYN-436738",
+        "case_status": "ESCALATED",
+        "claim_category": "ERRONEOUS",
+        "category": "ERRONEOUS",
+        "request_status": "NOT_AVAILABLE",
+        "reference_id": null,
+        "rail": "ACH",
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "9000",
+          "amount_max": "9000",
+          "date_min": "2026-07-25",
+          "date_max": "2026-07-25",
+          "day_of_month": null,
+          "month_of_year": null,
+          "week_of_month": null,
+          "beneficiary_description": "Northwind",
+          "customer_reason": "erroneous",
+          "rail": "ACH",
+          "customer_account": "ACCT-SYN-000005"
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-004997",
+                "rail": "ACH",
+                "amount": "9000.00",
+                "currency": "GBP",
+                "value_date": "2026-07-25",
+                "settlement_timestamp": "2026-07-25T09:00:00",
+                "debtor_account": "ACCT-SYN-000005",
+                "creditor_account": "ACCT-SYN-005247",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "date",
+                "beneficiary name",
+                "customer account"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-004997",
+          "rail": "ACH",
+          "amount": "9000.00",
+          "currency": "GBP",
+          "value_date": "2026-07-25",
+          "settlement_timestamp": "2026-07-25T09:00:00",
+          "debtor_account": "ACCT-SYN-000005",
+          "creditor_account": "ACCT-SYN-005247",
+          "creditor_registered_name": "Northwind Supplies Ltd",
+          "creditor_trading_name": "Northwind",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "ERRONEOUS",
+          "action": "Request return of funds",
+          "rationale": "Configured recovery window has expired; escalate and close without submitting a request.",
+          "available": false,
+          "requires_human_review": true,
+          "message_type": "AC_RETURN",
+          "reason_code": "SYN_R02",
+          "deadline_days": 5,
+          "recovery_guaranteed": false
+        },
+        "deadline": "2026-07-30",
+        "confidence": 0.84,
+        "clarification_question": null,
+        "customer_message": "We recorded your erroneous claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category ERRONEOUS. This request does not guarantee recovery.",
+        "redacted": true,
+        "agent_confirmed": false,
+        "raised_at": "2026-09-22T07:10:29.687660",
+        "approved_at": null,
+        "last_updated_at": "2026-09-22T07:10:29.687663"
+      }
+    ],
+    "Taylor Kim": [
+      {
+        "case_id": "CASE-SYN-362746",
+        "case_status": "ESCALATED",
+        "claim_category": "ERRONEOUS",
+        "category": "ERRONEOUS",
+        "request_status": "NOT_AVAILABLE",
+        "reference_id": null,
+        "rail": "ACH",
+        "remedy_available": false,
+        "agent_approval_required": true,
+        "agent_approved": false,
+        "extracted_facts": {
+          "amount_min": "1800",
+          "amount_max": "1800",
+          "date_min": "2026-09-09",
+          "date_max": "2026-09-09",
+          "day_of_month": null,
+          "month_of_year": null,
+          "week_of_month": null,
+          "beneficiary_description": "Northwind",
+          "customer_reason": "",
+          "rail": "ACH",
+          "customer_account": "ACCT-SYN-000006"
+        },
+        "ranked_candidates": {
+          "candidates": [
+            {
+              "payment": {
+                "payment_id": "PMT-SYN-000006",
+                "rail": "ACH",
+                "amount": "1800.00",
+                "currency": "GBP",
+                "value_date": "2026-09-09",
+                "settlement_timestamp": "2026-09-09T09:00:00",
+                "debtor_account": "ACCT-SYN-000006",
+                "creditor_account": "ACCT-SYN-000256",
+                "creditor_registered_name": "Northwind Supplies Ltd",
+                "creditor_trading_name": "Northwind",
+                "status": "SETTLED",
+                "funds_moved": true
+              },
+              "confidence": 0.99,
+              "match_reasons": [
+                "amount",
+                "date",
+                "beneficiary name",
+                "customer account"
+              ]
+            }
+          ],
+          "abstained": false,
+          "abstention_reason": null
+        },
+        "selected_payment": {
+          "payment_id": "PMT-SYN-000006",
+          "rail": "ACH",
+          "amount": "1800.00",
+          "currency": "GBP",
+          "value_date": "2026-09-09",
+          "settlement_timestamp": "2026-09-09T09:00:00",
+          "debtor_account": "ACCT-SYN-000006",
+          "creditor_account": "ACCT-SYN-000256",
+          "creditor_registered_name": "Northwind Supplies Ltd",
+          "creditor_trading_name": "Northwind",
+          "status": "SETTLED",
+          "funds_moved": true
+        },
+        "remedy": {
+          "category": "ERRONEOUS",
+          "action": "Request return of funds",
+          "rationale": "Configured recovery window has expired; escalate and close without submitting a request.",
+          "available": false,
+          "requires_human_review": true,
+          "message_type": "AC_RETURN",
+          "reason_code": "SYN_R02",
+          "deadline_days": 5,
+          "recovery_guaranteed": false
+        },
+        "deadline": "2026-09-14",
+        "confidence": 0.84,
+        "clarification_question": null,
+        "customer_message": "We recorded your erroneous claim for the payment. Any return or recall request is not a guarantee of recovery; the receiving institution may decline it and funds may no longer be available.",
+        "interbank_request": "Synthetic request: review [REDACTED-PAYMENT] for category ERRONEOUS. This request does not guarantee recovery.",
+        "redacted": true,
+        "agent_confirmed": false,
+        "raised_at": "2026-09-22T07:09:41.226557",
+        "approved_at": null,
+        "last_updated_at": "2026-09-22T07:09:41.226566"
+      }
+    ]
   },
   "chat_threads": {
     "CASE-SYN-559108": [
@@ -379,43 +601,51 @@
         "text": "\"I made a mistake with the ACH payment of GBP 1450 on 2026-01-02 to Northwind"
       }
     ],
-    "CASE-SYN-963010": [
+    "CASE-SYN-362746": [
       {
         "role": "customer",
-        "text": "I made a mistake with the payment around GBP 1000 on 2026-01-02"
+        "text": "I do not recognise the ACH payment of GBP 1800 on 2026-09-09 to Northwind"
       },
       {
         "role": "agent",
-        "text": "Please provide the beneficiary so I can confirm the payment before classifying the claim."
-      },
+        "text": "We matched the GBP 1,800.00 payment on 2026-09-09 to Northwind via ACH. The payment-exception deadline passed on 2026-09-14; I am routing this for manual review. No late request will be raised and no customer confirmation is required."
+      }
+    ],
+    "CASE-SYN-436738": [
       {
         "role": "customer",
-        "text": "to Blue Oak"
+        "text": "I made a mistake with the ACH payment of GBP 9000 on 2026-07-25 to Northwind"
       },
       {
         "role": "agent",
-        "text": "I found a GBP 900.00 payment on 2026-01-02 to Blue Oak. You mentioned an approximate amount. Please confirm this payment or choose another option before I classify the claim. Option 1: GBP 900.00 on 2026-01-02 to Blue Oak via WIRE (PMT-SYN-000003)"
-      },
+        "text": "We matched the GBP 9,000.00 payment on 2026-07-25 to Northwind via ACH. The payment-exception deadline passed on 2026-07-30; I am routing this for manual review. No late request will be raised and no customer confirmation is required."
+      }
+    ],
+    "CASE-SYN-382930": [
       {
         "role": "customer",
-        "text": "yes i confirm"
+        "text": "I made a mistake with the WIRE payment of GBP 900 on 2026-01-02 to Blue Oa"
       },
       {
         "role": "agent",
         "text": "We matched the GBP 900.00 payment on 2026-01-02 to Blue Oak via WIRE. The payment-exception deadline passed on 2026-01-03; I am routing this for manual review. No late request will be raised and no customer confirmation is required."
       }
     ],
-    "CASE-SYN-813678": [
+    "CASE-SYN-921053": [
       {
         "role": "customer",
-        "text": "I did not make the ACH payment of GBP 1250 on 2026-01-02  to Northwind"
+        "text": "The RTP payment of GBP 3200 on 2026-09-05 to Cedar was a scam.\",PMT-SYN-004999,AUTHORISED_BUT_SCAMMED"
+      },
+      {
+        "role": "agent",
+        "text": "We recorded your authorised-but-scammed claim for the RTP payment. This claim requires manual review. No recovery is promised and no inter-bank request will be raised automatically."
       }
     ]
   },
   "drafts": {
     "Maya Patel": "",
     "Jordan Lee": "",
-    "Sam Rivera": "I made a mistake with the payment around GBP 1000 on 2026-01-02 Clarification: to Blue Oak Clarification: yes i confirm",
+    "Sam Rivera": "",
     "Alex Morgan": "",
     "Priya Shah": "",
     "Taylor Kim": ""
