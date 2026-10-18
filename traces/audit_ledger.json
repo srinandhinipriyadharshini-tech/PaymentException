@@ -1,14 +1,20 @@
 [
   {
-    "Case": "CASE-SYN-921053",
+    "Case": "CASE-SYN-375901",
     "Verdict": "Closed as no remedy",
     "Operator": "Payment Exception Analyst",
-    "Evidence": "Historical policy decision recovered from the persisted case record"
+    "Evidence": "No-remedy policy decision: recovery request blocked by rail, status, or deadline rules"
   },
   {
-    "Case": "CASE-SYN-934752",
-    "Verdict": "Closed as no remedy",
+    "Case": "CASE-SYN-117579",
+    "Verdict": "Analyst Approved",
     "Operator": "Payment Exception Analyst",
-    "Evidence": "Historical policy decision recovered from the persisted case record"
+    "Evidence": "Escalated case approved; customer email triggered"
+  },
+  {
+    "Case": "CASE-SYN-243188",
+    "Verdict": "Analyst Approved",
+    "Operator": "Payment Exception Analyst",
+    "Evidence": "Escalated case approved; customer email triggered"
   }
 ]

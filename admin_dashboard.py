@@ -490,24 +490,90 @@ def render_secondary_view(view: str) -> None:
         return
 
     if view == "Policy controls":
-        st.markdown("### Active Rulebook")
-        rules = pd.DataFrame([
-            {"Control": "Recovery window", "Rule": "Payment age must be 60 days or less", "Outcome": "Raise simulated request"},
-            {"Control": "Instant rail finality", "Rule": "RTP and FEDNOW cannot expose recovery remedy", "Outcome": "No-Remedy"},
-            {"Control": "Ambiguous match", "Rule": "Leading candidates must clear the ambiguity band", "Outcome": "Clarification required"},
-            {"Control": "Human approval", "Rule": "Agent approval required before submission", "Outcome": "Manual checkpoint"},
+        st.markdown("### Active Rulebook — Consumer Accounts")
+        st.caption("These are the active deterministic controls from RULEBOOK.md. All SYN_* reason codes and 1-day windows are synthetic demo constants.")
+
+        st.markdown("#### Matching and selection")
+        match_controls = pd.DataFrame([
+            {"Control": "Minimum match score", "Active rule": "60 / 100", "Decision": "Below threshold: NO_MATCH"},
+            {"Control": "Automatic selection", "Active rule": "Top score ≥ 80 and gap ≥ 15", "Decision": "Otherwise clarify; never silently select an ambiguous payment"},
+            {"Control": "Score weights", "Active rule": "Amount 40 · Date 25 · Beneficiary 25 · Account 10", "Decision": "Only the customer's own accounts are searched"},
+            {"Control": "Approximate amount", "Active rule": "“Around 1000” searches 500–1999", "Decision": "Search as a range, not an exact amount"},
         ])
-        st.dataframe(rules, use_container_width=True, hide_index=True)
-        st.markdown("### Four-Rail Classification Policy")
+        st.dataframe(match_controls, use_container_width=True, hide_index=True)
+
+        st.markdown("#### Four-rail remedy policy")
         rail_policy = pd.DataFrame([
-            {"Rail": "ACH", "Eligible categories": "Unauthorised · Erroneous · Authorised scam", "Settlement rule": "SETTLED or PENDING", "Request path": "AC_RETURN", "Analyst outcome": "Return request if deadline is open; otherwise manual review"},
-            {"Rail": "WIRE", "Eligible categories": "Unauthorised · Erroneous · Authorised scam", "Settlement rule": "SETTLED or PENDING", "Request path": "wire_recall_request", "Analyst outcome": "Recall request if deadline is open; otherwise manual review"},
-            {"Rail": "RTP", "Eligible categories": "Unauthorised · Erroneous", "Settlement rule": "PENDING may proceed; funds moved blocks recovery", "Request path": "rtp_return_request", "Analyst outcome": "Return request only when funds have not moved"},
-            {"Rail": "FEDNOW", "Eligible categories": "Unauthorised · Erroneous", "Settlement rule": "PENDING may proceed; funds moved blocks recovery", "Request path": "fednow_return_request", "Analyst outcome": "Return request only when funds have not moved"},
+            {
+                "Rail": "ACH",
+                "Settled unauthorised": "AC_RETURN · SYN_R10 · 60 calendar days",
+                "Settled erroneous": "AC_RETURN · SYN_R02 · 5 banking days",
+                "Pending": "Cancel/stop · payment_cancel_request · SYN_CANCEL01 (E-01)",
+                "Additional controls": "Unauthorised debit requires signed statement (E-02); Track A applies to unauthorised claims",
+            },
+            {
+                "Rail": "WIRE",
+                "Settled unauthorised": "wire_recall_request · SYN_W01 · 1 calendar day",
+                "Settled erroneous": "wire_recall_request · SYN_W01 · 1 calendar day",
+                "Pending": "Cancel/stop · payment_cancel_request · SYN_CANCEL01 (E-01)",
+                "Additional controls": "International wire → manual review (E-03); domestic WIRE Track A is not applicable; recall depends on receiving bank",
+            },
+            {
+                "Rail": "RTP",
+                "Settled unauthorised": "Default: NO_REMEDY after funds move; request only if funds-moved flag is enabled",
+                "Settled erroneous": "Same as settled unauthorised",
+                "Pending": "Cancel/stop · payment_cancel_request · SYN_CANCEL01 (E-01)",
+                "Additional controls": "If funds-moved request flag is enabled: rtp_return_request · SYN_rtp01 · 1 calendar day; never promise recovery",
+            },
+            {
+                "Rail": "FEDNOW",
+                "Settled unauthorised": "Default: NO_REMEDY after funds move; request only if funds-moved flag is enabled",
+                "Settled erroneous": "Same as settled unauthorised",
+                "Pending": "Cancel/stop · payment_cancel_request · SYN_CANCEL01 (E-01)",
+                "Additional controls": "If funds-moved request flag is enabled: fednow_return_request · SYN_fn01 · 1 calendar day; never promise recovery",
+            },
         ])
         st.dataframe(rail_policy, use_container_width=True, hide_index=True)
-        note("Classification order", "Intake extracts the claim category first, matching selects the payment, then rail status, funds movement, deadline, and human approval determine whether a simulated request can be raised.", "info")
-        note("Policy guard", "These controls are deterministic synthetic rules. Recommendations cannot bypass a policy gate.", "info")
+
+        st.markdown("#### Active feature flags")
+        feature_flags = pd.DataFrame([
+            {"Flag": "ENABLE_PENDING_CANCEL", "Value": "Enabled", "Effect": "Pending payments use cancellation/stop request; no deadline evaluation"},
+            {"Flag": "RTP_FEDNOW_REQUEST_AFTER_FUNDS_MOVED", "Value": "Disabled", "Effect": "Settled RTP/FEDNOW payments have NO_REMEDY after funds move"},
+            {"Flag": "ENABLE_ACH_DOCUMENT_PRECONDITION", "Value": "Enabled", "Effect": "Signed statement required for settled unauthorised ACH debit"},
+            {"Flag": "ENABLE_INTL_WIRE_MANUAL_REVIEW", "Value": "Enabled", "Effect": "International consumer wires go to manual review; no automatic request"},
+        ])
+        st.dataframe(feature_flags, use_container_width=True, hide_index=True)
+
+        st.markdown("#### Track A — Regulation E clock")
+        rege_controls = pd.DataFrame([
+            {"Control": "Scope", "Active rule": "Unauthorised ACH, RTP, and FEDNOW only; not WIRE, erroneous, or authorised-but-scammed"},
+            {"Control": "Notice window", "Active rule": "Claim date within 60 calendar days of statement date"},
+            {"Control": "Investigation / provisional credit", "Active rule": "Investigation due in 10 banking days; if incomplete, provisional credit is due by that date"},
+            {"Control": "Extended investigation", "Active rule": "45 calendar days; 90 calendar days when account age is under 30 days"},
+            {"Control": "Independence", "Active rule": "Track A is reported independently and does not change the Track B remedy"},
+        ])
+        st.dataframe(rege_controls, use_container_width=True, hide_index=True)
+
+        st.markdown("#### Evaluation gates")
+        gates = pd.DataFrame([
+            {"Order": "G-01", "Condition": "Transcript not confirmed", "Outcome": "STOP_UNCONFIRMED_TRANSCRIPT"},
+            {"Order": "G-02–03", "Condition": "No match / score below 60; or ambiguous candidates", "Outcome": "NO_MATCH / CLARIFY_AMBIGUOUS"},
+            {"Order": "G-04–05", "Condition": "Authorised-but-scammed; or open request exists", "Outcome": "ESCALATE_SCAM / BLOCK_DUPLICATE"},
+            {"Order": "G-06–08", "Condition": "No permitted rail remedy; deadline passed; or required document missing", "Outcome": "NO_REMEDY / ESCALATE_EXPIRED / AWAIT_DOCUMENT"},
+            {"Order": "G-09–10", "Condition": "Human review not confirmed; otherwise all gates pass", "Outcome": "HOLD_FOR_HUMAN_REVIEW / REMEDY_AVAILABLE"},
+        ])
+        st.dataframe(gates, use_container_width=True, hide_index=True)
+        st.markdown("#### Cross-rail and audit controls")
+        global_controls = pd.DataFrame([
+            {"Control": "Authorised-but-scammed", "Active rule": "ESCALATE_SCAM; no automatic recovery request; preserve claim category"},
+            {"Control": "Wire scam priority", "Active rule": "URGENT when the 1-calendar-day wire window remains open"},
+            {"Control": "Recovery guarantee", "Active rule": "Always FALSE; every request is a request only"},
+            {"Control": "Request creation", "Active rule": "Only after REMEDY_AVAILABLE and customer confirmation"},
+            {"Control": "PII and audit", "Active rule": "Mask account IDs, email, and phone in every output, log, and audit record"},
+        ])
+        st.dataframe(global_controls, use_container_width=True, hide_index=True)
+        note("Deadline convention", "Calendar-day deadlines use the payment event date; ACH erroneous-payment deadlines use banking days excluding weekends and configured Federal Reserve holidays. Deadline cutoff is 17:00 America/New_York, inclusive through the deadline date. Pending cancellation requests are not deadline-evaluated.", "info")
+        note("Policy guard", "A customer confirmation is requested only for REMEDY_AVAILABLE. No request is created before customer confirmation, and recovery_guaranteed is always FALSE. Recommendations cannot bypass a policy gate.", "info")
         return
 
     if view == "Risk analytics":

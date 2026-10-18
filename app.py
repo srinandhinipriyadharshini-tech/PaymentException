@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 from datetime import date, datetime
+import hashlib
 import html
 import io
 import json
@@ -11,6 +12,7 @@ import time
 import duckdb
 import streamlit as st
 
+from ai.voice import SupportUrgency, VoiceServiceError, analyze_support_urgency, transcribe_audio
 from core.models import CaseResult, CaseStatus, Category, RequestStatus
 from core.workflow import process_claim
 from data.create_database import create_database
@@ -200,10 +202,13 @@ def clear_user_history(user_name: str) -> None:
     st.session_state.active_case_ids[user_name] = None
     st.session_state.drafts[user_name] = ""
     st.session_state.transcript_confirmed[user_name] = False
+    st.session_state.voice_transcripts[user_name] = ""
+    st.session_state.voice_urgency[user_name] = None
+    st.session_state.voice_sources[user_name] = "not_available"
+    st.session_state.voice_recording_fingerprints[user_name] = ""
+    st.session_state.voice_capture_versions[user_name] += 1
     for key in (
         f"claim_{user_name}",
-        f"transcript_{user_name}",
-        f"voice_{user_name}",
     ):
         st.session_state.pop(key, None)
     for case_id in case_ids:
@@ -259,6 +264,17 @@ def render_role_selector() -> None:
 def mark_reply_submitted(input_key: str, flag_key: str) -> None:
     st.session_state[flag_key] = st.session_state.get(input_key, "")
     st.session_state[input_key] = ""
+
+
+def update_transcript(user_name: str, transcript_key: str) -> None:
+    transcript = st.session_state.get(transcript_key, "").strip()
+    st.session_state.voice_transcripts[user_name] = transcript
+    st.session_state.transcript_confirmed[user_name] = bool(transcript)
+    st.session_state.voice_urgency[user_name] = (
+        analyze_support_urgency(transcript) if transcript else None
+    )
+    if transcript and st.session_state.voice_sources[user_name] == "not_available":
+        st.session_state.voice_sources[user_name] = "reviewed_transcript"
 
 
 def customer_response(result: CaseResult) -> str:
@@ -394,6 +410,13 @@ def render_result(result: CaseResult, history: list[CaseResult], active_user: st
         st.caption(f"Case owner: {active_user}  ·  Synthetic review workspace")
     with header_right:
         st.markdown(f'<div class="status-box">{status_badge(status, tone)}<br><span class="muted">Current Case State</span></div>', unsafe_allow_html=True)
+
+    if result.support_urgency_level:
+        st.markdown(
+            f'<div class="alert alert-info"><strong>Support urgency signal: {safe_text(result.support_urgency_level.title())}</strong><br>'
+            'This wording-based support cue is not a clinical assessment and does not affect payment eligibility or the claim decision.</div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown('<div class="review-title"><span>01</span><div><strong>Classification Confidence</strong><small>Extracted facts and confidence from the customer message</small></div></div>', unsafe_allow_html=True)
     facts = result.extracted_facts
@@ -626,6 +649,16 @@ if "transcript_confirmed" not in st.session_state:
     st.session_state.transcript_confirmed = {name: False for name in USERS}
 if "voice_transcripts" not in st.session_state:
     st.session_state.voice_transcripts = {name: "" for name in USERS}
+if "voice_urgency" not in st.session_state:
+    st.session_state.voice_urgency = {name: None for name in USERS}
+if "voice_sources" not in st.session_state:
+    st.session_state.voice_sources = {name: "not_available" for name in USERS}
+if "voice_recording_fingerprints" not in st.session_state:
+    st.session_state.voice_recording_fingerprints = {name: "" for name in USERS}
+if "voice_capture_versions" not in st.session_state:
+    st.session_state.voice_capture_versions = {name: 0 for name in USERS}
+if "voice_errors" not in st.session_state:
+    st.session_state.voice_errors = {name: "" for name in USERS}
 if "sent_replies" not in st.session_state:
     st.session_state.sent_replies = {}
 if "chat_threads" not in st.session_state:
@@ -719,62 +752,124 @@ with left:
     if st.session_state.pop(f"reset_{claim_key}", False):
         st.session_state[claim_key] = ""
     claim = st.text_area("Customer message", value=st.session_state.drafts[active_user], height=125, key=claim_key, placeholder="Example: I never authorised the ACH payment of GBP 1250 on 2026-01-02 to Northwind.")
-    audio = st.audio_input("🎙️ Record customer voice message", key=f"voice_{active_user}")
+    capture_version = st.session_state.voice_capture_versions[active_user]
+    transcript_key = f"transcript_{active_user}_{capture_version}"
+    audio = st.audio_input(
+        "🎙️ Record customer voice message",
+        key=f"voice_{active_user}_{capture_version}",
+    )
     if audio:
         st.audio(audio, format=audio.type)
-        st.caption("Voice recording captured. This offline demo maps the recording to a deterministic transcription scenario.")
-        scenario_options = ["Select a demo scenario"] + list(VOICE_DEMO_SCENARIOS)
-        voice_scenario = st.selectbox("Demo transcription scenario", scenario_options, key=f"voice_scenario_{active_user}")
-        scenario_selected = voice_scenario != "Select a demo scenario"
-        if scenario_selected:
-            st.markdown(f'<div class="output-card"><div class="output-label">Voice transcription preview</div>{safe_text(VOICE_DEMO_SCENARIOS[voice_scenario])}</div>', unsafe_allow_html=True)
-        else:
-            note("Voice scenario", "Choose a scenario to preview the deterministic transcript before processing the recording.", "info")
-        if st.button("Transcribe & process voice", key=f"transcribe_voice_{active_user}", type="primary", disabled=not scenario_selected, width="stretch"):
-            voice_text = VOICE_DEMO_SCENARIOS[voice_scenario]
-            st.session_state.voice_transcripts[active_user] = voice_text
-            st.session_state.drafts[active_user] = voice_text
-            with st.spinner("Transcribing voice and searching candidate payments..."):
-                voice_result = process_claim(voice_text, debtor_account=profile["account"])
-                active_result = register_customer_case(history, voice_text, voice_result)
-            st.session_state.active_case_ids[active_user] = active_result.case_id
-            st.session_state.active_case_id = active_result.case_id
-            st.session_state.drafts[active_user] = voice_text if voice_result.clarification_question else ""
-            st.session_state[f"reset_{claim_key}"] = True
-            save_saved_state()
-            st.rerun()
+        st.caption("Local Whisper runs on this machine. Audio is not sent to an external transcription service. The model downloads once on first use.")
+        recording = audio.getvalue()
+        fingerprint = hashlib.sha256(recording).hexdigest()
+        if fingerprint != st.session_state.voice_recording_fingerprints[active_user]:
+            st.session_state.voice_recording_fingerprints[active_user] = fingerprint
+            try:
+                with st.spinner("Loading local Whisper and transcribing the recording..."):
+                    voice_text = transcribe_audio(recording, getattr(audio, "type", ""))
+                    urgency = analyze_support_urgency(voice_text)
+            except VoiceServiceError as exc:
+                st.session_state.voice_errors[active_user] = str(exc)
+            else:
+                st.session_state.voice_errors[active_user] = ""
+                st.session_state.voice_transcripts[active_user] = voice_text
+                st.session_state.voice_urgency[active_user] = urgency
+                st.session_state.voice_sources[active_user] = "whisper"
+                st.session_state[transcript_key] = voice_text
+                st.session_state.transcript_confirmed[active_user] = True
+                st.rerun()
+
+        with st.expander("Offline demo transcript (does not use the recording)"):
+            st.caption("Choose a fixed example transcript if local Whisper is unavailable; this does not transcribe your audio.")
+            scenario_options = ["Select a demo scenario"] + list(VOICE_DEMO_SCENARIOS)
+            voice_scenario = st.selectbox(
+                "Demo transcription scenario",
+                scenario_options,
+                key=f"voice_scenario_{active_user}_{capture_version}",
+            )
+            scenario_selected = voice_scenario != "Select a demo scenario"
+            if scenario_selected:
+                st.markdown(f'<div class="output-card"><div class="output-label">Demo transcript preview</div>{safe_text(VOICE_DEMO_SCENARIOS[voice_scenario])}</div>', unsafe_allow_html=True)
+            if st.button("Use offline demo transcript", key=f"use_demo_voice_{active_user}_{capture_version}", disabled=not scenario_selected, width="stretch"):
+                voice_text = VOICE_DEMO_SCENARIOS[voice_scenario]
+                st.session_state.voice_transcripts[active_user] = voice_text
+                st.session_state.voice_urgency[active_user] = analyze_support_urgency(voice_text)
+                st.session_state.voice_sources[active_user] = "offline_demo"
+                st.session_state[transcript_key] = voice_text
+                st.session_state.transcript_confirmed[active_user] = True
+                st.rerun()
+    if st.session_state.voice_errors[active_user]:
+        st.error(st.session_state.voice_errors[active_user])
+
+    transcript = st.text_area(
+        "Transcript",
+        key=transcript_key,
+        height=80,
+        placeholder="Your voice transcript will appear here automatically.",
+        on_change=update_transcript,
+        args=(active_user, transcript_key),
+    )
     if st.session_state.voice_transcripts[active_user]:
-        st.markdown(f'<div class="output-card"><div class="output-label">Captured customer transcript</div>{safe_text(st.session_state.voice_transcripts[active_user])}</div>', unsafe_allow_html=True)
-    transcript_key = f"transcript_{active_user}"
-    if st.session_state.pop(f"reset_transcript_{active_user}", False):
-        st.session_state[transcript_key] = ""
-    transcript = st.text_area("Typed transcript fallback / review", key=transcript_key, height=80, placeholder="Paste the transcript, confirm it, then process the claim.")
-    if audio or transcript.strip():
-        transcript_state = "Confirmed" if st.session_state.transcript_confirmed[active_user] else "Needs confirmation"
-        st.markdown(f"Transcript state: {status_badge(transcript_state, 'teal' if transcript_state == 'Confirmed' else 'amber')}", unsafe_allow_html=True)
-        if st.button("Confirm transcript", key=f"confirm_transcript_{active_user}", disabled=not transcript.strip(), width="stretch"):
-            st.session_state.transcript_confirmed[active_user] = True
+        st.markdown(f'<div class="output-card"><div class="output-label">Captured customer transcript</div>{safe_text(transcript or st.session_state.voice_transcripts[active_user])}</div>', unsafe_allow_html=True)
+    urgency = st.session_state.voice_urgency[active_user]
+    if urgency:
+        source_label = {
+            "whisper": "Whisper transcript",
+            "offline_demo": "Offline demo transcript",
+        }.get(st.session_state.voice_sources[active_user], "Customer transcript")
+        st.markdown(
+            f'<div class="output-card"><div class="output-label">Support urgency signal · {source_label}</div>'
+            f'<strong>{safe_text(urgency.level.title())}</strong><br>{safe_text(urgency.reason)}'
+            '<br><small>This wording-based support cue is not a clinical assessment and does not affect payment eligibility or the claim decision.</small></div>',
+            unsafe_allow_html=True,
+        )
+    if st.session_state.voice_sources[active_user] in {"whisper", "offline_demo"} and transcript.strip():
+        st.caption("Transcript ready. Process the claim or record again.")
+    if audio or st.session_state.voice_transcripts[active_user]:
+        if st.button("Record again", key=f"record_again_{active_user}", width="stretch"):
+            st.session_state.voice_capture_versions[active_user] += 1
+            st.session_state.voice_recording_fingerprints[active_user] = ""
+            st.session_state.voice_errors[active_user] = ""
+            st.session_state.transcript_confirmed[active_user] = False
+            st.session_state.voice_transcripts[active_user] = ""
+            st.session_state.voice_urgency[active_user] = None
+            st.session_state.voice_sources[active_user] = "not_available"
             st.rerun()
-    process_disabled = bool((audio or transcript.strip()) and not st.session_state.transcript_confirmed[active_user] and not claim.strip())
-    if process_disabled:
-        st.caption("Confirm the transcript before processing this intake.")
+    process_disabled = not (transcript.strip() or claim.strip())
     if st.button("Process claim", type="primary", disabled=process_disabled, width="stretch"):
-        text = claim.strip() or transcript.strip()
+        text = transcript.strip() or claim.strip()
         if not text:
-            note("Customer message needed", "Enter a customer message or confirm the transcript before processing.", "hold")
+            note("Customer message needed", "Enter a customer message or record a voice message before processing.", "hold")
         else:
             try:
+                st.session_state.transcript_confirmed[active_user] = bool(transcript.strip())
                 st.session_state.drafts[active_user] = text
                 with st.spinner("Extracting facts and searching synthetic payments..."):
                     result = process_claim(text, debtor_account=profile["account"])
+                    urgency = st.session_state.voice_urgency[active_user]
+                    if transcript.strip():
+                        urgency = analyze_support_urgency(text)
+                    if urgency and transcript.strip():
+                        result = result.model_copy(update={
+                            "support_urgency_level": urgency.level,
+                            "support_urgency_score": urgency.score,
+                            "support_urgency_reason": urgency.reason,
+                            "support_urgency_source": st.session_state.voice_sources[active_user],
+                        })
                     active_result = register_customer_case(history, text, result)
                 st.session_state.active_case_ids[active_user] = active_result.case_id
                 st.session_state.active_case_id = active_result.case_id
                 st.session_state.drafts[active_user] = text if result.clarification_question else ""
                 st.session_state[f"reset_{claim_key}"] = True
-                st.session_state[f"reset_transcript_{active_user}"] = True
+                st.session_state.voice_capture_versions[active_user] += 1
                 save_saved_state()
                 st.session_state.transcript_confirmed[active_user] = False
+                st.session_state.voice_transcripts[active_user] = ""
+                st.session_state.voice_urgency[active_user] = None
+                st.session_state.voice_sources[active_user] = "not_available"
+                st.session_state.voice_recording_fingerprints[active_user] = ""
+                st.session_state.voice_errors[active_user] = ""
                 st.rerun()
             except Exception:
                 note("Claim not processed", "Check the intake text and try again.", "hold")
@@ -974,4 +1069,3 @@ with right:
         render_result(current, history, active_user)
     else:
         st.markdown('<div class="empty-card"><h3>No active case</h3><p class="muted">Process a customer message to populate extracted facts, payment candidates, classification, remedy, deadline, and generated outputs.</p></div>', unsafe_allow_html=True)
-

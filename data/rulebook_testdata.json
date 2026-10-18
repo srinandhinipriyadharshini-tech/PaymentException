@@ -1,0 +1,840 @@
+{
+  "metadata": {
+    "source": "RULEBOOK.md",
+    "scope": "consumer accounts only",
+    "timezone": "America/New_York",
+    "note": "Synthetic validation fixtures aligned to the deterministic rulebook. Each case includes both the input payload and the expected decision outcome."
+  },
+  "cases": [
+    {
+      "id": "T01",
+      "title": "ACH debit, unauthorised, settled within 60-day window, signed statement received",
+      "inputs": {
+        "now": "2026-10-18T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-10-18",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000001",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1200,
+          "currency": "USD",
+          "payment_event_date": "2026-09-20",
+          "statement_date": "2026-09-20",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "REMEDY_AVAILABLE",
+        "rule_id": "ACH-01",
+        "message_type": "AC_RETURN",
+        "reason_code": "SYN_R10",
+        "deadline_days": 60,
+        "track_a": {
+          "applicable": true,
+          "notice_timely": true,
+          "investigation_due": "2026-11-02"
+        },
+        "ask_customer_confirmation": true,
+        "request_created": false,
+        "recovery_guaranteed": false
+      }
+    },
+    {
+      "id": "T02",
+      "title": "ACH debit, unauthorised, 61 days after statement, signed statement received",
+      "inputs": {
+        "now": "2026-12-20T12:00:00-05:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-12-20",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000002",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1200,
+          "currency": "USD",
+          "payment_event_date": "2026-10-20",
+          "statement_date": "2026-10-20",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "ESCALATE_EXPIRED",
+        "rule_id": "ACH-03",
+        "message_type": "none",
+        "request_created": false,
+        "ask_customer_confirmation": false,
+        "track_a": {
+          "applicable": true,
+          "notice_timely": false,
+          "track_a_status": "MANUAL_REVIEW_LATE_NOTICE"
+        }
+      }
+    },
+    {
+      "id": "T03",
+      "title": "ACH debit, unauthorised, settled, missing signed statement",
+      "inputs": {
+        "now": "2026-10-18T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-10-18",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000003",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1200,
+          "currency": "USD",
+          "payment_event_date": "2026-09-20",
+          "statement_date": "2026-09-20",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": false,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "AWAIT_DOCUMENT",
+        "rule_id": "ACH-02",
+        "message_type": "none",
+        "request_created": false,
+        "ask_customer_confirmation": false,
+        "explanation": "To request a return of this debit we need your signed statement that you did not authorise it. No request has been submitted yet."
+      }
+    },
+    {
+      "id": "T04",
+      "title": "ACH erroneous, settled 3 banking days ago",
+      "inputs": {
+        "now": "2026-01-09T12:00:00-05:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "ERRONEOUS",
+        "claim_date": "2026-01-09",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000004",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 2400,
+          "currency": "USD",
+          "payment_event_date": "2026-01-05",
+          "statement_date": "2026-01-05",
+          "is_international": false,
+          "account_age_days": 60,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "REMEDY_AVAILABLE",
+        "rule_id": "ACH-04",
+        "message_type": "AC_RETURN",
+        "reason_code": "SYN_R02",
+        "deadline_days": 5,
+        "ask_customer_confirmation": true,
+        "recovery_guaranteed": false
+      }
+    },
+    {
+      "id": "T05",
+      "title": "ACH erroneous, settled 6 banking days ago",
+      "inputs": {
+        "now": "2026-01-12T12:00:00-05:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "ERRONEOUS",
+        "claim_date": "2026-01-12",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000005",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 2400,
+          "currency": "USD",
+          "payment_event_date": "2026-01-05",
+          "statement_date": "2026-01-05",
+          "is_international": false,
+          "account_age_days": 60,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "ESCALATE_EXPIRED",
+        "rule_id": "ACH-05",
+        "message_type": "none",
+        "request_created": false,
+        "ask_customer_confirmation": false
+      }
+    },
+    {
+      "id": "T06",
+      "title": "Domestic wire erroneous settled today",
+      "inputs": {
+        "now": "2026-08-14T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "ERRONEOUS",
+        "claim_date": "2026-08-14",
+        "customer_id": "CUST-SYN-000002",
+        "customer_accounts": ["ACCT-SYN-000002"],
+        "payment": {
+          "payment_id": "PMT-SYN-000006",
+          "rail": "WIRE",
+          "status": "SETTLED",
+          "direction": "CREDIT_PUSH",
+          "amount": 15000,
+          "currency": "USD",
+          "payment_event_date": "2026-08-14",
+          "statement_date": "2026-08-14",
+          "is_international": false,
+          "account_age_days": 30,
+          "beneficiary_name": "Blue Oak Capital",
+          "beneficiary_known_trading_names": ["Blue Oak"],
+          "account_number": "ACCT-SYN-****0002"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "REMEDY_AVAILABLE",
+        "rule_id": "WIRE-01",
+        "message_type": "wire_recall_request",
+        "reason_code": "SYN_W01",
+        "deadline_days": 1,
+        "track_a": {
+          "applicable": false,
+          "status": "NOT_APPLICABLE"
+        },
+        "ask_customer_confirmation": true,
+        "recovery_guaranteed": false
+      }
+    },
+    {
+      "id": "T07",
+      "title": "Domestic wire settled 2 days ago",
+      "inputs": {
+        "now": "2026-08-16T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-08-16",
+        "customer_id": "CUST-SYN-000002",
+        "customer_accounts": ["ACCT-SYN-000002"],
+        "payment": {
+          "payment_id": "PMT-SYN-000007",
+          "rail": "WIRE",
+          "status": "SETTLED",
+          "direction": "CREDIT_PUSH",
+          "amount": 15000,
+          "currency": "USD",
+          "payment_event_date": "2026-08-14",
+          "statement_date": "2026-08-14",
+          "is_international": false,
+          "account_age_days": 30,
+          "beneficiary_name": "Blue Oak Capital",
+          "beneficiary_known_trading_names": ["Blue Oak"],
+          "account_number": "ACCT-SYN-****0002"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "ESCALATE_EXPIRED",
+        "rule_id": "WIRE-02",
+        "message_type": "none",
+        "request_created": false,
+        "ask_customer_confirmation": false
+      }
+    },
+    {
+      "id": "T08",
+      "title": "Wire authorised-but-scammed within 1 day",
+      "inputs": {
+        "now": "2026-08-15T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "AUTHORISED_BUT_SCAMMED",
+        "claim_date": "2026-08-15",
+        "customer_id": "CUST-SYN-000002",
+        "customer_accounts": ["ACCT-SYN-000002"],
+        "payment": {
+          "payment_id": "PMT-SYN-000008",
+          "rail": "WIRE",
+          "status": "SETTLED",
+          "direction": "CREDIT_PUSH",
+          "amount": 5000,
+          "currency": "USD",
+          "payment_event_date": "2026-08-15",
+          "statement_date": "2026-08-15",
+          "is_international": false,
+          "account_age_days": 30,
+          "beneficiary_name": "Blue Oak Capital",
+          "beneficiary_known_trading_names": ["Blue Oak"],
+          "account_number": "ACCT-SYN-****0002"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "ESCALATE_SCAM",
+        "rule_id": "WIRE-04",
+        "message_type": "none",
+        "priority": "URGENT",
+        "request_created": false,
+        "ask_customer_confirmation": false
+      }
+    },
+    {
+      "id": "T09",
+      "title": "RTP pending unauthorised claim",
+      "inputs": {
+        "now": "2026-09-05T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-05",
+        "customer_id": "CUST-SYN-000003",
+        "customer_accounts": ["ACCT-SYN-000003"],
+        "payment": {
+          "payment_id": "PMT-SYN-000009",
+          "rail": "RTP",
+          "status": "PENDING",
+          "direction": "DEBIT_PULL",
+          "amount": 3200,
+          "currency": "GBP",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Cedar Works",
+          "beneficiary_known_trading_names": ["Cedar"],
+          "account_number": "ACCT-SYN-****0003"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "REMEDY_AVAILABLE",
+        "rule_id": "RTP-01",
+        "message_type": "rtp_return_request",
+        "reason_code": "SYN_rtp01",
+        "deadline_days": 1,
+        "ask_customer_confirmation": true,
+        "recovery_guaranteed": false
+      }
+    },
+    {
+      "id": "T10",
+      "title": "RTP settled, funds moved, flag false",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000003",
+        "customer_accounts": ["ACCT-SYN-000003"],
+        "payment": {
+          "payment_id": "PMT-SYN-000010",
+          "rail": "RTP",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 3200,
+          "currency": "GBP",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Cedar Works",
+          "beneficiary_known_trading_names": ["Cedar"],
+          "account_number": "ACCT-SYN-****0003",
+          "funds_moved": true
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false,
+        "feature_flags": {
+          "RTP_FEDNOW_REQUEST_AFTER_FUNDS_MOVED": false
+        }
+      },
+      "expected": {
+        "outcome_code": "NO_REMEDY",
+        "rule_id": "RTP-03",
+        "message_type": "none",
+        "request_created": false,
+        "ask_customer_confirmation": false,
+        "explanation_contains": "already been delivered and cannot be pulled back through this process"
+      }
+    },
+    {
+      "id": "T11",
+      "title": "FedNow settled, funds moved, flag true within 1 day",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000004",
+        "customer_accounts": ["ACCT-SYN-000004"],
+        "payment": {
+          "payment_id": "PMT-SYN-000011",
+          "rail": "FEDNOW",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 4200,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 50,
+          "beneficiary_name": "Lumen Health",
+          "beneficiary_known_trading_names": ["Lumen"],
+          "account_number": "ACCT-SYN-****0004",
+          "funds_moved": true
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false,
+        "feature_flags": {
+          "RTP_FEDNOW_REQUEST_AFTER_FUNDS_MOVED": true
+        }
+      },
+      "expected": {
+        "outcome_code": "REMEDY_AVAILABLE",
+        "rule_id": "FN-02",
+        "message_type": "fednow_return_request",
+        "reason_code": "SYN_fn01",
+        "deadline_days": 1,
+        "ask_customer_confirmation": true,
+        "recovery_guaranteed": false,
+        "explanation_contains": "may decline"
+      }
+    },
+    {
+      "id": "T12",
+      "title": "Any rail, authorised-but-scammed",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "AUTHORISED_BUT_SCAMMED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000005",
+        "customer_accounts": ["ACCT-SYN-000005"],
+        "payment": {
+          "payment_id": "PMT-SYN-000012",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "CREDIT_PUSH",
+          "amount": 700,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 50,
+          "beneficiary_name": "Fabrikam",
+          "beneficiary_known_trading_names": ["Fabrikam"],
+          "account_number": "ACCT-SYN-****0005"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "ESCALATE_SCAM",
+        "rule_id": "G-04",
+        "message_type": "none",
+        "request_created": false,
+        "ask_customer_confirmation": false
+      }
+    },
+    {
+      "id": "T13",
+      "title": "Two payments scoring 88 and 79; ambiguous",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "candidate_payments": [
+          {"payment_id": "PMT-SYN-000013", "score": 88, "rail": "ACH", "amount": 1000},
+          {"payment_id": "PMT-SYN-000014", "score": 79, "rail": "ACH", "amount": 980}
+        ],
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "CLARIFY_AMBIGUOUS",
+        "request_created": false,
+        "ask_customer_confirmation": false,
+        "customer_prompt": "Which of these did you mean:"
+      }
+    },
+    {
+      "id": "T14",
+      "title": "Best candidate scores 55",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "candidate_payments": [
+          {"payment_id": "PMT-SYN-000015", "score": 55, "rail": "ACH", "amount": 1200}
+        ],
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "NO_MATCH",
+        "request_created": false,
+        "ask_customer_confirmation": false,
+        "category": null,
+        "deadline": null,
+        "message_type": "none"
+      }
+    },
+    {
+      "id": "T15",
+      "title": "Around 1000 with a 1,450 payment should include range match",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000016",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1450,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "amount_phrase": "around 1000",
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "candidate_included": true,
+        "match_window": [500, 1999],
+        "reason": "approximate_amount_ranges" 
+      }
+    },
+    {
+      "id": "T16",
+      "title": "Beneficiary described by trading name",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000017",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 900,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Blue Oak Capital",
+          "beneficiary_known_trading_names": ["Blue Oak"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "beneficiary_description": "Blue Oak",
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "beneficiary_score": 25,
+        "match_status": "candidate accepted"
+      }
+    },
+    {
+      "id": "T17",
+      "title": "Open request already exists for the payment",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000018",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 995,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": true
+      },
+      "expected": {
+        "outcome_code": "BLOCK_DUPLICATE",
+        "request_created": false,
+        "ask_customer_confirmation": false,
+        "message_type": "none"
+      }
+    },
+    {
+      "id": "T18",
+      "title": "Agent approved but agent_review_confirmed is false",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": false,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000019",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1000,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "HOLD_FOR_HUMAN_REVIEW",
+        "request_created": false,
+        "ask_customer_confirmation": false,
+        "message_type": "none"
+      }
+    },
+    {
+      "id": "T19",
+      "title": "Reg E notice 70 days after statement",
+      "inputs": {
+        "now": "2026-10-18T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-10-18",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000020",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1000,
+          "currency": "USD",
+          "payment_event_date": "2026-08-09",
+          "statement_date": "2026-08-09",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "REMEDY_AVAILABLE",
+        "track_a": {
+          "applicable": true,
+          "notice_timely": false,
+          "status": "MANUAL_REVIEW_LATE_NOTICE"
+        },
+        "track_b": {
+          "unaffected": true,
+          "message_type": "AC_RETURN"
+        }
+      }
+    },
+    {
+      "id": "T20",
+      "title": "New account under 30 days, RTP unauthorised",
+      "inputs": {
+        "now": "2026-09-10T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-10",
+        "customer_id": "CUST-SYN-000006",
+        "customer_accounts": ["ACCT-SYN-000006"],
+        "payment": {
+          "payment_id": "PMT-SYN-000021",
+          "rail": "RTP",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1200,
+          "currency": "USD",
+          "payment_event_date": "2026-09-03",
+          "statement_date": "2026-09-03",
+          "is_international": false,
+          "account_age_days": 20,
+          "beneficiary_name": "Lumen Health",
+          "beneficiary_known_trading_names": ["Lumen"],
+          "account_number": "ACCT-SYN-****0006",
+          "funds_moved": true
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false,
+        "feature_flags": {
+          "RTP_FEDNOW_REQUEST_AFTER_FUNDS_MOVED": false
+        }
+      },
+      "expected": {
+        "outcome_code": "NO_REMEDY",
+        "track_a": {
+          "applicable": true,
+          "extended_due": "2026-12-09"
+        }
+      }
+    },
+    {
+      "id": "T21",
+      "title": "Transcript not confirmed",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": false,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000022",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1000,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-****0001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "outcome_code": "STOP_UNCONFIRMED_TRANSCRIPT",
+        "request_created": false,
+        "message_type": "none",
+        "ask_customer_confirmation": false,
+        "no_further_evaluation": true
+      }
+    },
+    {
+      "id": "T22",
+      "title": "No unmasked account IDs allowed in output",
+      "inputs": {
+        "now": "2026-09-06T12:00:00-04:00",
+        "transcript_confirmed": true,
+        "agent_review_confirmed": true,
+        "claim_category": "UNAUTHORISED",
+        "claim_date": "2026-09-06",
+        "customer_id": "CUST-SYN-000001",
+        "customer_accounts": ["ACCT-SYN-000001"],
+        "payment": {
+          "payment_id": "PMT-SYN-000023",
+          "rail": "ACH",
+          "status": "SETTLED",
+          "direction": "DEBIT_PULL",
+          "amount": 1000,
+          "currency": "USD",
+          "payment_event_date": "2026-09-05",
+          "statement_date": "2026-09-05",
+          "is_international": false,
+          "account_age_days": 45,
+          "beneficiary_name": "Northwind Supplies",
+          "beneficiary_known_trading_names": ["Northwind"],
+          "account_number": "ACCT-SYN-000001"
+        },
+        "signed_statement_received": true,
+        "open_request_exists": false
+      },
+      "expected": {
+        "test": "fail_if_output_contains_unmasked_account_id",
+        "must_not_contain": ["ACCT-SYN-000001", "ACCT-SYN-000006", "jane@example.com"],
+        "redaction_required": true
+      }
+    }
+  ]
+}

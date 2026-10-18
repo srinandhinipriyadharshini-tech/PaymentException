@@ -125,6 +125,10 @@ class CaseResult(BaseModel):
     clarification_question: Optional[str] = None
     customer_message: str = ""
     interbank_request: str = ""
+    support_urgency_level: Optional[str] = None
+    support_urgency_score: Optional[int] = Field(default=None, ge=0, le=100)
+    support_urgency_reason: Optional[str] = None
+    support_urgency_source: str = "not_available"
     redacted: bool = True
     agent_confirmed: bool = False
     raised_at: datetime = Field(default_factory=datetime.now)
@@ -141,4 +145,3 @@ class CaseResult(BaseModel):
             and (self.deadline is None or self.deadline >= date.today())
             and not self.clarification_question
         )
-

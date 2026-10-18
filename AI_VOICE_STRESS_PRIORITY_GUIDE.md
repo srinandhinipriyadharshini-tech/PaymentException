@@ -9,7 +9,7 @@ This guide describes how to extend the Clearline Payment Exceptions demo with:
 3. Analyst priority assignment in the Payment Exception Analyst workspace.
 4. Human review and deterministic policy safeguards.
 
-The current repository is offline-first. Its voice flow uses deterministic demo scenarios and its `platform/llm_client.py` is an intentionally unconfigured seam. This guide explains how to connect an approved hosted AI provider without putting a secret in source control or allowing an AI model to make the final payment decision.
+The customer voice flow uses local `faster-whisper` transcription on the app machine, plus a clearly labelled offline demo transcript. The model is downloaded to the local cache on first use. Transcription starts automatically when recording is complete; the customer can edit the transcript and submit it with **Process claim**, or choose **Record again**. Submitting the claim confirms the transcript. A local wording-based support-urgency heuristic is shown to the customer and stored with the case; it is not an acoustic stress detector, a diagnosis, or a payment-policy input. This guide retains the future integration guidance for approved structured distress analysis and analyst prioritisation.
 
 ## Important Safety Boundary
 
@@ -32,12 +32,15 @@ The current voice flow is in `app.py`:
 
 ```text
 st.audio_input()
-    -> deterministic demo scenario
-    -> transcript preview
-    -> transcript confirmation
+    -> automatic local Whisper transcription or selected offline demo
+    -> editable transcript preview
+    -> wording-based support-urgency cue
+    -> Process claim (submits/confirms transcript) or Record again
     -> core.workflow.process_claim()
     -> customer case history
 ```
+
+Local transcription runs on the app machine using `faster-whisper` and the `base` model by default. The model weights are downloaded once to the local model cache on first use; recorded audio is not sent to a transcription provider. Set `WHISPER_MODEL_SIZE` to `tiny`, `base`, `small`, `medium`, or `large-v3` to choose a local model size. The offline demo remains available explicitly. The current urgency cue examines transcript wording only; do not describe it as an analysis of vocal tone or physiological stress.
 
 The target flow is:
 
@@ -55,48 +58,31 @@ Relevant files:
 
 | File | Responsibility |
 | --- | --- |
-| `app.py` | Customer voice capture, transcript confirmation, and customer display |
+| `app.py` | Customer voice capture, automatic transcription, and customer display |
 | `admin_dashboard.py` | Payment Exception Analyst queue and case review |
 | `core/models.py` | Pydantic case and payment data models |
 | `core/workflow.py` | Deterministic payment matching and policy workflow |
 | `ai/` | AI layer boundaries |
-| `platform/llm_client.py` | Placeholder seam for a hosted LLM |
+| `ai/voice.py` | Local Whisper transcription and local wording-based support-urgency cue |
+| `platform/llm_client.py` | Placeholder seam for a future hosted LLM |
 | `platform/config.yaml` | Runtime model and threshold configuration |
 | `tests/` | Regression and behavior tests |
 
-## 1. Configure the API Key Securely
+## 1. Install the Local Whisper Runtime
 
-Never paste an API key into Python, YAML, Markdown, Streamlit code, or a git commit.
-
-For a temporary PowerShell session:
+The current implementation does not need an API key. Install the declared runtime in the project virtual environment:
 
 ```powershell
-$env:AI_API_KEY = "paste-the-approved-key-here"
+& ".\.venv\Scripts\python.exe" -m pip install -r requirements.txt
 ```
 
-For a persistent Windows user environment, set it outside the repository using your organization-approved secret manager or environment configuration. Restart the terminal after changing persistent variables.
+The `base` model downloads to the local Hugging Face cache the first time a recording is transcribed. This initial model download requires internet access; transcription itself runs locally. Use `WHISPER_MODEL_SIZE=tiny|base|small|medium|large-v3` to select a different installed/downloadable model size before starting Streamlit. Close existing Streamlit processes and restart after changing dependencies or environment settings.
 
-Verify that the variable exists without printing the secret:
+Do not print raw audio or customer transcripts in logs. The model download is public model data; recorded customer audio is not uploaded to a transcription provider.
 
-```powershell
-if ($env:AI_API_KEY) { "AI_API_KEY is configured" } else { "AI_API_KEY is missing" }
-```
+## 2. Voice Service Boundary
 
-Add local secret files to `.gitignore` if the project later introduces one. Do not print request headers, tokens, raw audio, or customer transcripts in logs.
-
-## 2. Add Provider Dependencies
-
-Use the official SDK for the selected provider when one is approved by the lab. Install it inside the project environment, for example:
-
-```powershell
-& ".\.venv\Scripts\python.exe" -m pip install <approved-provider-sdk>
-```
-
-Record the dependency in `requirements.txt` so another lab machine can reproduce the setup. Do not add a provider-specific package until the lab confirms which provider and model are approved.
-
-## 3. Create a Voice Service Boundary
-
-Create `ai/voice.py`. Keep provider-specific code in this file so the Streamlit pages and deterministic workflow do not depend directly on a vendor SDK.
+`ai/voice.py` owns local transcription and the bounded wording-based urgency cue. Keep the Streamlit page and deterministic payment workflow independent of the transcription runtime.
 
 A provider-neutral contract should look like this:
 
@@ -119,10 +105,8 @@ class DistressResult:
     reason: str
 
 
-def transcribe_audio(audio_bytes: bytes, filename: str, content_type: str) -> TranscriptResult:
-    """Send audio to the approved speech-to-text provider."""
-    # Provider-specific SDK call goes here.
-    # Read the API key from os.environ, never from source code.
+def transcribe_audio(audio_bytes: bytes, content_type: str) -> str:
+    """Transcribe audio locally with faster-whisper."""
     raise NotImplementedError
 
 
@@ -132,37 +116,27 @@ def analyze_distress(transcript: str) -> DistressResult:
     raise NotImplementedError
 ```
 
-Keep the service return values small and typed. Do not pass an unvalidated provider response directly into the case model.
+Keep service return values small and typed. Never use this signal to determine whether a payment is eligible for recovery.
 
-## 4. Speech-to-Text Request
+## 3. Speech-to-Text and Confirmation
 
-The speech request should include:
+The local transcriber receives:
 
-- The recorded audio bytes.
-- The correct MIME type from Streamlit's uploaded audio object.
-- A language hint if the customer language is known.
-- A request for plain transcript text or a small structured response.
+- Recorded audio bytes.
+- The recording's media type from Streamlit.
+- A local Whisper model selected by `WHISPER_MODEL_SIZE`.
 
-Validate the response before displaying it:
-
-```python
-transcript = response.text.strip()
-if not transcript:
-    raise ValueError("The speech provider returned an empty transcript.")
-
-if len(transcript) > 20_000:
-    transcript = transcript[:20_000]
-```
+The implementation rejects empty recordings/transcripts and limits transcript text to 20,000 characters.
 
 Recommended user flow:
 
 1. Customer records a message.
-2. The application sends the audio to the provider.
-3. The transcript appears in a preview panel.
-4. The customer or operator confirms the transcript.
-5. Only the confirmed transcript enters `process_claim()`.
+2. The application transcribes the audio locally with Whisper.
+3. The transcript appears in an editable preview panel.
+4. The customer clicks **Process claim** to submit the transcript, or **Record again** to replace it.
+5. Only the submitted transcript enters `process_claim()`.
 
-The confirmation step must remain. Speech recognition can mishear amounts, dates, names, and negations such as `I did not authorize this`.
+The customer can review or edit the transcript before submission because speech recognition can mishear amounts, dates, names, and negations such as `I did not authorize this`.
 
 ## 5. Distress Signal Prompt
 
@@ -287,42 +261,15 @@ visible = sorted(
 )
 ```
 
-## 8. Integrate with `app.py`
+## 8. Current `app.py` Integration
 
-Replace the deterministic voice scenario selection in the voice section of `app.py` with the following logical sequence:
+The customer page now uses this sequence:
 
-```python
-if audio:
-    audio_bytes = audio.getvalue()
-    audio_type = getattr(audio, "type", "audio/wav")
-
-    with st.spinner("Transcribing customer message..."):
-        transcript_result = transcribe_audio(
-            audio_bytes,
-            filename="customer-voice.webm",
-            content_type=audio_type,
-        )
-
-    st.session_state.voice_transcripts[active_user] = transcript_result.text
-    st.session_state.drafts[active_user] = transcript_result.text
-    st.rerun()
-```
-
-Then, after transcript confirmation:
-
-```python
-if st.session_state.transcript_confirmed[active_user]:
-    with st.spinner("Analyzing support urgency..."):
-        distress = analyze_distress(transcript)
-
-    priority = calculate_priority(
-        case_status="RECEIVED",
-        distress_score=distress.score,
-        deadline_days=None,
-    )
-```
-
-Pass the confirmed transcript into the existing workflow. Do not change matching, category classification, remedy, rail rules, or deadline behavior.
+1. Customer records audio; local Whisper transcription starts automatically when the recording is complete.
+2. The app displays an editable transcript preview and a wording-based support cue.
+3. The customer clicks **Process claim** to submit the transcript, or **Record again** to replace the recording.
+4. Only the submitted transcript is passed into `process_claim()`.
+5. The cue is stored with the case but does not change matching, category classification, remedy, rail rules, or deadline behavior.
 
 ## 9. Display the Signal on 8501
 
@@ -351,11 +298,11 @@ Use clear colors:
 - P3: teal/neutral accent
 - Unknown: gray accent
 
-The analyst must still be able to open the case and inspect the original confirmed transcript.
+The analyst must still be able to open the case and inspect the original submitted transcript.
 
 ## 11. Testing Plan
 
-Add unit tests before enabling the hosted provider in the live demo.
+Unit tests cover the local service boundary and urgency classification.
 
 ### Validation tests
 
@@ -363,8 +310,9 @@ Add unit tests before enabling the hosted provider in the live demo.
 - Transcript length is bounded.
 - Invalid distress level is rejected.
 - Scores below 0 or above 100 are rejected.
-- Unknown provider output produces `not_available`, not a guessed score.
-- API key is never included in logs or trace files.
+- Empty and unsupported audio input is rejected.
+- Empty transcription output is not accepted as a successful transcript.
+- The local model receives the audio without any hosted transcription request.
 
 ### Priority tests
 
@@ -377,8 +325,8 @@ Add unit tests before enabling the hosted provider in the live demo.
 
 ### Workflow tests
 
-- Confirmed transcript reaches `process_claim()`.
-- Unconfirmed transcript cannot create a case.
+- Submitted transcript reaches `process_claim()`.
+- The customer can edit or replace a transcript before submitting it.
 - Existing deterministic payment matching remains unchanged.
 - Existing human approval remains required before simulated submission.
 - Existing RTP/FEDNOW and expired-deadline rules remain authoritative.
@@ -393,42 +341,37 @@ Run:
 
 ## 12. Demo Fallback
 
-The application must still work without an API key. Keep the deterministic demo mode:
+The application remains usable if the local model cannot be downloaded or loaded. Keep the explicitly selected deterministic demo mode:
 
 ```text
-AI_API_KEY missing
-    -> show offline demo mode
-    -> use the existing fixed transcript scenarios
-    -> leave distress signal as unavailable
-    -> calculate priority from deterministic case status and deadline only
+Local Whisper unavailable
+    -> show the transcription error
+    -> allow user to choose an offline demo transcript
+    -> do not claim that the demo transcript came from the audio
 ```
 
-This makes the demo reproducible in the AI Lab and prevents a provider outage from blocking the payment-exception workflow.
+This makes the demo reproducible and prevents model-download issues from blocking the payment-exception workflow.
 
 ## 13. Suggested Implementation Order
 
-1. Confirm the approved provider, model, retention policy, and audio formats.
-2. Add the secret through the lab's environment or secret manager.
-3. Add the provider SDK to the virtual environment and `requirements.txt`.
-4. Create `ai/voice.py` with transcription and structured distress contracts.
-5. Add strict response validation and offline fallback.
-6. Add the four optional fields to `CaseResult`.
-7. Connect confirmed transcripts in `app.py`.
-8. Add deterministic priority calculation.
-9. Add priority and distress signal display to `admin_dashboard.py`.
-10. Add unit tests and run the full validation commands.
-11. Test with synthetic recordings containing amounts, dates, beneficiaries, and explicit negation.
-12. Demonstrate that a high distress signal changes queue order only, never payment-policy outcomes.
+1. Install the `faster-whisper` dependency from `requirements.txt`.
+2. Select a local model size that fits the machine and download it to the local model cache.
+3. Keep `ai/voice.py` as the local transcription and support-urgency boundary.
+4. Consider acoustic/support analysis only with an approved, privacy-reviewed design; current analysis uses transcript wording only.
+5. Add priority display to `admin_dashboard.py` if analyst prioritization is required.
+6. Add unit tests and run the validation commands.
+7. Test with synthetic recordings containing amounts, dates, beneficiaries, and explicit negation.
+8. Demonstrate that urgency cues can affect support routing only, never payment-policy outcomes.
 
 ## Definition of Done
 
 The feature is ready for the hackathon demo when:
 
-- A recorded voice message becomes a visible, confirmable transcript.
-- The confirmed transcript is used by the existing payment workflow.
-- A structured distress signal is stored with the case.
-- The analyst queue shows P1/P2/P3 priority and a short reason.
-- Priority sorting is deterministic and tested.
-- No API key, raw audio, or unnecessary transcript is written to logs.
-- The app still runs in offline demo mode without a key.
+- A completed recording is automatically transcribed into a visible, editable transcript.
+- The submitted transcript is used by the existing payment workflow.
+- A bounded wording-based support urgency cue is stored with a confirmed voice case.
+- The cue is clearly presented as non-diagnostic and does not change payment-policy outcomes.
+- The analyst queue priority extension remains future work unless separately implemented.
+- No raw audio is sent to an external transcription service or written to logs.
+- The app still runs in offline demo mode if the local model is unavailable.
 - Human approval and existing payment policy guards remain in control.

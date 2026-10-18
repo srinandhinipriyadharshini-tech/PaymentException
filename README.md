@@ -43,6 +43,8 @@ The generated PowerPoint deck is [UC02_Core_Payment_Exceptions_Pitch.pptx](UC02_
 
 The regenerated demo data includes July, August, and September scenarios across ACH, WIRE, RTP, and FEDNOW, including expired settled payments and a pending in-progress FEDNOW payment.
 
+Customer voice transcription starts automatically when a recording is complete, using local `faster-whisper` with the `base` model by default. The customer can edit the transcript and click **Process claim**, or choose **Record again**. Install project requirements before launch; the Whisper model downloads to the local cache on first transcription. Recordings are processed on the app machine and are not sent to an external transcription service. Optionally set `WHISPER_MODEL_SIZE` to `tiny`, `base`, `small`, `medium`, or `large-v3` before launching to change the local model size. The offline demo transcript remains available if model setup is unavailable.
+
 For the complete AI Lab demo, run `start_demo.ps1` from the repository root. It starts the customer portal on 8501, the Payment Exception Analyst console on 8502, and the live case API on 8503. Verify with `http://localhost:8501`, `http://localhost:8502`, `http://localhost:8503/health`, and `http://localhost:8503/api/cases`. The optional React console runs separately from `frontend` with `npm.cmd run dev -- --host 127.0.0.1`.
 
 ## Troubleshooting

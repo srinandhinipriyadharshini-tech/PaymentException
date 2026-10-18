@@ -22,23 +22,23 @@ function Invoke-Python([string[]] $Arguments) {
 function Find-Python {
     $pythonLauncher = Get-Command py -ErrorAction SilentlyContinue
     if ($pythonLauncher) {
-        $null = & py -3.14 -c "import sys; print(sys.executable)" 2>$null
+        $null = & py -3.15 -c "import sys; print(sys.executable)" 2>$null
         if ($LASTEXITCODE -eq 0) {
-            return "py -3.14"
+            return "py -3.15"
         }
     }
     $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
     if ($pythonCommand) {
         return $pythonCommand.Source
     }
-    throw "Python 3.14 was not found. Install Python from https://www.python.org/downloads/windows/ and run this script again."
+    throw "Python 3.15 was not found. Install Python from https://www.python.org/downloads/windows/ and run this script again."
 }
 
 if (-not (Test-Path $Python)) {
     $BootstrapPython = Find-Python
     Write-Host "Creating Python environment..." -ForegroundColor Cyan
-    if ($BootstrapPython -eq "py -3.14") {
-        & py -3.14 -m venv $Root\.venv
+    if ($BootstrapPython -eq "py -3.15") {
+        & py -3.15 -m venv $Root\.venv
     } else {
         & $BootstrapPython -m venv $Root\.venv
     }
