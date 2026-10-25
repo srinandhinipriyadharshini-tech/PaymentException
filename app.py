@@ -13,6 +13,7 @@ import duckdb
 import streamlit as st
 
 from ai.voice import SupportUrgency, VoiceServiceError, analyze_support_urgency, transcribe_audio
+from app_platform.navigation import render_workspace_switcher
 from core.models import CaseResult, CaseStatus, Category, RequestStatus
 from core.workflow import process_claim
 from data.create_database import create_database
@@ -53,6 +54,63 @@ REASON_CODES = {
 
 def safe_text(value: object) -> str:
     return html.escape(str(value))
+
+
+def render_voice_reply(text: str) -> None:
+    encoded_text = (
+        json.dumps(text, ensure_ascii=True)
+        .replace("<", r"\u003c")
+        .replace(">", r"\u003e")
+        .replace("&", r"\u0026")
+    )
+    st.html(
+        f"""
+        <div class="voice-reply">
+        <button id="speak-reply" type="button">🔊 Listen to latest reply</button>
+        <span id="speech-status" role="status" aria-live="polite"></span>
+        <script>
+          const reply = {encoded_text};
+          const button = document.getElementById("speak-reply");
+          const status = document.getElementById("speech-status");
+          if (!("speechSynthesis" in window)) {{
+            button.disabled = true;
+            status.textContent = "Voice playback is not supported by this browser.";
+          }} else {{
+            button.addEventListener("click", () => {{
+              if (window.speechSynthesis.speaking) {{
+                window.speechSynthesis.cancel();
+                button.textContent = "🔊 Listen to latest reply";
+                status.textContent = "Playback stopped.";
+                return;
+              }}
+              const utterance = new SpeechSynthesisUtterance(reply);
+              utterance.onstart = () => {{
+                button.textContent = "Stop playback";
+                status.textContent = "Playing reply.";
+              }};
+              utterance.onend = () => {{
+                button.textContent = "🔊 Listen to latest reply";
+                status.textContent = "Playback finished.";
+              }};
+              utterance.onerror = () => {{
+                button.textContent = "🔊 Listen to latest reply";
+                status.textContent = "Voice playback could not start.";
+              }};
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(utterance);
+            }});
+          }}
+        </script>
+        </div>
+        <style>
+          .voice-reply {{ font-family: sans-serif; }}
+          .voice-reply button {{ padding: 0.55rem 0.8rem; border: 0; border-radius: 4px; background: #0f6f5c; color: white; cursor: pointer; }}
+          .voice-reply button:disabled {{ cursor: not-allowed; opacity: 0.65; }}
+          .voice-reply span {{ margin-left: 0.6rem; color: #52636a; font-size: 0.85rem; }}
+        </style>
+        """,
+        unsafe_allow_javascript=True,
+    )
 
 
 def masked_identifier(value: str) -> str:
@@ -134,29 +192,34 @@ def format_case_date(value: datetime | None) -> str:
 
 def load_saved_state() -> tuple[dict[str, list[CaseResult]], dict[str, list[dict]], dict[str, str]]:
     empty = {name: [] for name in USERS}
+    empty_drafts = {name: "" for name in USERS}
     if not HISTORY_PATH.exists():
-        return empty, {}, {}
+        return empty, {}, empty_drafts
     try:
         saved = json.loads(HISTORY_PATH.read_text(encoding="utf-8"))
         histories = {
             name: [refresh_clarification(CaseResult.model_validate(item)) for item in saved.get("histories", {}).get(name, [])]
             for name in USERS
         }
-        drafts = {name: saved.get("drafts", {}).get(name, "") for name in USERS}
         chat_threads = saved.get("chat_threads", {})
-        for name, items in histories.items():
-            if not items or not drafts[name]:
-                continue
-            latest = items[-1]
-            if latest.clarification_question:
-                refreshed = process_claim(drafts[name], DATABASE_PATH, debtor_account=USERS[name]["account"])
-                refreshed.case_id = latest.case_id
-                preserve_case_dates(refreshed, latest)
-                items[-1] = refreshed
-                chat_threads.pop(refreshed.case_id, None)
-        return histories, chat_threads, drafts
+        if not isinstance(chat_threads, dict):
+            chat_threads = {}
+        legacy_drafts = saved.get("drafts", {})
+        if isinstance(legacy_drafts, dict):
+            for name, items in histories.items():
+                if not items:
+                    continue
+                latest = items[-1]
+                legacy_draft = legacy_drafts.get(name)
+                if not latest.clarification_question or not legacy_draft or chat_threads.get(latest.case_id):
+                    continue
+                chat_threads[latest.case_id] = [
+                    {"role": "customer", "text": legacy_draft},
+                    {"role": "agent", "text": clarification_response(latest)},
+                ]
+        return histories, chat_threads, empty_drafts
     except (OSError, ValueError):
-        return empty, {}, {}
+        return empty, {}, empty_drafts
 
 
 def save_saved_state() -> None:
@@ -167,7 +230,6 @@ def save_saved_state() -> None:
             for name, items in st.session_state.histories.items()
         },
         "chat_threads": st.session_state.chat_threads,
-        "drafts": st.session_state.drafts,
     }
     HISTORY_PATH.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
@@ -255,6 +317,10 @@ def role_url(role: str) -> str:
 
 
 def render_role_selector() -> None:
+    if st.session_state.get("_unified_streamlit_app"):
+        render_workspace_switcher("Customer Portal")
+        return
+
     st.markdown(
         '<details class="role-menu"><summary>User</summary><a href="http://localhost:8501">User</a><a href="http://localhost:8502">Payment Exception Analyst</a></details>',
         unsafe_allow_html=True,
@@ -687,19 +753,9 @@ if history:
         history[index] = refresh_clarification(item)
     case_ids = {item.case_id for item in history}
     if st.session_state.active_case_ids.get(active_user) not in case_ids:
-        st.session_state.active_case_ids[active_user] = history[-1].case_id
+        st.session_state.active_case_ids[active_user] = None
     st.session_state.active_case_id = st.session_state.active_case_ids[active_user]
 current = next((item for item in history if item.case_id == st.session_state.active_case_ids.get(active_user)), None)
-if current and current.clarification_question and st.session_state.drafts.get(active_user):
-    refreshed = process_claim(st.session_state.drafts[active_user], DATABASE_PATH, debtor_account=profile["account"])
-    refreshed.case_id = current.case_id
-    preserve_case_dates(refreshed, current)
-    current_index = next((index for index, item in enumerate(history) if item.case_id == current.case_id), None)
-    if current_index is not None:
-        history[current_index] = refreshed
-        current = refreshed
-        st.session_state.chat_threads.pop(current.case_id, None)
-        save_saved_state()
 if current and current.clarification_question:
     thread = st.session_state.chat_threads.get(current.case_id, [])
     for message in thread:
@@ -873,40 +929,42 @@ with left:
                 st.rerun()
             except Exception:
                 note("Claim not processed", "Check the intake text and try again.", "hold")
-    # Re-evaluate an old clarification using the text currently visible in the intake box.
-    if current and current.clarification_question:
-        current_draft = claim.strip() or st.session_state.drafts.get(active_user, "")
-        if current_draft:
-            refreshed = process_claim(current_draft, DATABASE_PATH, debtor_account=profile["account"])
-            refreshed.case_id = current.case_id
-            preserve_case_dates(refreshed, current)
-            current_index = next((index for index, item in enumerate(history) if item.case_id == current.case_id), None)
-            if current_index is not None:
-                history[current_index] = refreshed
-                current = refreshed
-                st.session_state.chat_threads.pop(current.case_id, None)
-                save_saved_state()
 
     st.markdown("### Conversation")
     if claim.strip() or current:
         if current:
             thread = st.session_state.chat_threads.setdefault(current.case_id, [])
-            if not thread:
-                if st.session_state.drafts[active_user]:
-                    thread.append({"role": "customer", "text": st.session_state.drafts[active_user]})
-            initial_response = customer_response(current)
-            if initial_response and not any(item.get("role") == "agent" for item in thread):
-                thread.append({"role": "agent", "text": initial_response})
-                save_saved_state()
-            if current.clarification_question:
-                detailed_question = clarification_response(current)
-                thread.append({"role": "agent", "text": detailed_question}) if not any(item["text"] == detailed_question for item in thread) else None
+            thread_changed = False
+            if thread:
+                initial_response = customer_response(current)
+                if initial_response and not any(item.get("role") == "agent" for item in thread):
+                    thread.append({"role": "agent", "text": initial_response})
+                    thread_changed = True
+                if current.clarification_question:
+                    detailed_question = clarification_response(current)
+                    if not any(item["text"] == detailed_question for item in thread):
+                        thread.append({"role": "agent", "text": detailed_question})
+                        thread_changed = True
+                if thread_changed:
+                    save_saved_state()
+            else:
+                st.caption("This conversation is empty. Refreshing clears messages; case details remain in the case history.")
             for message in thread:
                 if not message.get("text"):
                     continue
                 bubble_class = "customer" if message["role"] == "customer" else "agent"
                 label = "Customer" if message["role"] == "customer" else "Agent"
                 st.markdown(f'<div class="wa-message {bubble_class}"><span>{label}</span>{safe_text(message["text"])}</div>', unsafe_allow_html=True)
+            latest_agent_reply = next(
+                (
+                    message["text"]
+                    for message in reversed(thread)
+                    if message.get("role") == "agent" and message.get("text")
+                ),
+                None,
+            )
+            if latest_agent_reply:
+                render_voice_reply(latest_agent_reply)
 
             if current.clarification_question:
                 clarification_key = f"clarification_{active_user}_{current.case_id}"
@@ -1041,6 +1099,19 @@ with left:
             if st.button(item.case_id, key=f"open_case_{active_user}_{item.case_id}", width="stretch"):
                 st.session_state.active_case_ids[active_user] = item.case_id
                 st.session_state.active_case_id = item.case_id
+                if item.clarification_question:
+                    selected_thread = st.session_state.chat_threads.get(item.case_id, [])
+                    original_message = next(
+                        (
+                            message.get("text", "")
+                            for message in selected_thread
+                            if message.get("role") == "customer"
+                        ),
+                        "",
+                    )
+                    if original_message:
+                        st.session_state.drafts[active_user] = original_message
+                save_saved_state()
                 st.rerun()
             no_remedy = (
                 item.case_status is CaseStatus.NO_REMEDY

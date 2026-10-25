@@ -879,14 +879,17 @@
         "role": "agent",
         "text": "We matched the GBP 799.00 payment on 2026-09-21 to John via RTP. The payment-exception deadline passed on 2026-09-22; I am routing this for manual review. No late request will be raised and no customer confirmation is required."
       }
-    ]
-  },
-  "drafts": {
-    "Maya Patel": "I sent 3000 to North Wind.",
-    "Jordan Lee": "",
-    "Sam Rivera": "The WIRE payment of GBP 250000  to Fabrikam was unauthorised Clarification: on 2026-09-21",
-    "Alex Morgan": "",
-    "Priya Shah": "",
-    "Taylor Kim": ""
+    ],
+    "CASE-SYN-206230": [
+      {
+        "role": "customer",
+        "text": "I sent 3000 to North Wind."
+      },
+      {
+        "role": "agent",
+        "text": "Please provide the payment date so I can confirm the payment before classifying the claim."
+      }
+    ],
+    "CASE-SYN-471881": []
   }
 }

@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from app_platform.navigation import render_workspace_switcher
 from theme import note
 
 
@@ -206,6 +207,10 @@ def sync_sla_age_to_case() -> None:
 
 
 def render_role_selector() -> None:
+    if st.session_state.get("_unified_streamlit_app"):
+        render_workspace_switcher("Analyst Console")
+        return
+
     st.sidebar.markdown(
         '<details class="role-menu"><summary>Payment Exception Analyst</summary><a href="http://localhost:8501">User</a><a href="http://localhost:8502">Payment Exception Analyst</a></details>',
         unsafe_allow_html=True,
@@ -604,9 +609,13 @@ def main() -> None:
         st.session_state.admin_history = load_audit_history()
     if "admin_cases" not in st.session_state:
         st.session_state.admin_cases = load_customer_cases()
+    switcher_left, switcher_right = st.columns([4, 1.5])
+    with switcher_left:
+        st.markdown("### Clearline | Payment Exception Analyst")
+    with switcher_right:
+        render_role_selector()
     st.sidebar.markdown("# Clearline")
     st.sidebar.caption("PAYMENT EXCEPTION ANALYST CONSOLE")
-    render_role_selector()
     workspace = st.sidebar.selectbox("Workspace", ["Operations workspace", "Audit workspace"], label_visibility="collapsed")
     st.sidebar.markdown("### CONTROL CENTRE")
     selected_view = st.sidebar.radio("Navigate", ["Exception queue", "Live orchestration", "Policy controls", "Risk analytics", "Audit ledger"], label_visibility="collapsed")

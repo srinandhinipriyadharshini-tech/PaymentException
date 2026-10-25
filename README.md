@@ -14,6 +14,17 @@ py -3.14 -m venv .venv
 
 Expected test output ends with the current test count. Streamlit prints a local URL such as `http://localhost:8501`.
 
+## Deploy both Streamlit pages to Community Cloud
+
+Deploy the repository as one Streamlit Community Cloud app so the customer portal and analyst console can read and update the same case-history files:
+
+1. Push this repository to GitHub.
+2. In Streamlit Community Cloud, create an app from this repository and select the branch you want to deploy.
+3. Set **Main file path** to `streamlit_app.py` and the **App URL** as desired, then deploy.
+4. Use the **Switch workspace** dropdown in the page header to switch between **Customer Portal** and **Analyst Console**.
+
+The deployment uses the dependencies in `requirements.txt` and the checked-in synthetic DuckDB fixture. No secrets or external service credentials are required. This is a public, synthetic-data demo: it has no authentication, and Community Cloud's local filesystem is not durable storage. Do not enter real customer or payment data; case history and analyst decisions may be lost when the app restarts or is redeployed. This single deployment is required for the two pages to share local case history.
+
 ## UC-02 layer entry points
 
 The repository now exposes the UC-02-style boundaries in `ai/`: `IntakeAI`, `MatchingAI`, `ClassificationAI`, and `DraftingAI`. Their results use the structured envelope in `app_platform/ai_contract.py`; the implementation remains deterministic and offline.
@@ -44,6 +55,10 @@ The generated PowerPoint deck is [UC02_Core_Payment_Exceptions_Pitch.pptx](UC02_
 The regenerated demo data includes July, August, and September scenarios across ACH, WIRE, RTP, and FEDNOW, including expired settled payments and a pending in-progress FEDNOW payment.
 
 Customer voice transcription starts automatically when a recording is complete, using local `faster-whisper` with the `base` model by default. The customer can edit the transcript and click **Process claim**, or choose **Record again**. Install project requirements before launch; the Whisper model downloads to the local cache on first transcription. Recordings are processed on the app machine and are not sent to an external transcription service. Optionally set `WHISPER_MODEL_SIZE` to `tiny`, `base`, `small`, `medium`, or `large-v3` before launching to change the local model size. The offline demo transcript remains available if model setup is unavailable.
+
+The customer conversation also includes **Listen to latest reply**. It uses the browser's built-in speech synthesis, so customers can play or stop the agent's latest text response without installing a text-to-speech service. Playback requires a browser with speech-synthesis support and starts only when the customer presses the button; the reply text is not sent to a separate speech service.
+
+Conversation messages are saved with their case. After a browser refresh, no case is selected and the conversation stays hidden until the customer clicks that case number in **Case History**. Unfinished intake drafts clear on refresh.
 
 For the complete AI Lab demo, run `start_demo.ps1` from the repository root. It starts the customer portal on 8501, the Payment Exception Analyst console on 8502, and the live case API on 8503. Verify with `http://localhost:8501`, `http://localhost:8502`, `http://localhost:8503/health`, and `http://localhost:8503/api/cases`. The optional React console runs separately from `frontend` with `npm.cmd run dev -- --host 127.0.0.1`.
 
