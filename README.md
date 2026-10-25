@@ -65,3 +65,7 @@ For the complete AI Lab demo, run `start_demo.ps1` from the repository root. It 
 ## Troubleshooting
 
 If `py -3.14` is unavailable, install Python 3.14 or use the full Python executable path. If DuckDB reports a locked database, stop Streamlit and rerun the generator. If imports fail, run commands from this project root. Regenerating the database is safe and deterministic.
+
+https://paymentexceptionuser.streamlit.app/
+
+https://paymentexceptionexceptionanalyst.streamlit.app/
